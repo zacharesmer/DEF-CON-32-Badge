@@ -1,0 +1,6 @@
+[submodule "pirda"]
+	path = pirda
+	url = https://github.com/zacharesmer/pirda
+[submodule "st7789"]
+	path = st7789
+	url = https://github.com/zacharesmer/st7789-pico-fast.git
