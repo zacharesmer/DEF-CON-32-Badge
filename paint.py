@@ -6,6 +6,13 @@ import screen.st7789v as st7789
 from machine import Pin, Timer
 import random
 from array import array
+import rp2
+
+import asyncio
+
+# import micropython
+
+# micropython.alloc_emergency_exception_buf(100)
 
 
 def random_fg_color():
@@ -48,18 +55,47 @@ class PaintHistory:
     # TODO: make some kind of frame around the drawing area so it's only 255 x 240 so I can hold more dots in the history
     # or if I want to be boring just send the framebuf (boooo)
     def __init__(self):
+        # index is the most recently written index of the history array
         self.index = 0
+        # this is the latest valid index to fast forward to
+        # if we've undone, it will not match the current index
         self.latest_valid_index = 0
 
-        self.max_size = 10_000
+        self.max_size = 20_000
         self.sleep_time = 1
 
-        self.x = array("i", [0] * 10_000)
-        self.y = array("i", [0] * 10_000)
+        self.points = array("i", [0] * self.max_size)
 
     def clear(self):
         history.index = 0
         history.latest_valid_index = 0
+
+    # def x_at(self, index):
+    #     return self.points[index] >> 16
+
+    # def y_at(self, index):
+    #     return self.points[index] & 0x00_00_FF_FF
+
+    def x(self):
+        return (self.points[self.index] >> 16) & 0x00_00_FF_FF
+
+    def y(self):
+        return self.points[self.index] & 0x00_00_FF_FF
+
+    def add_x_y(self, x, y):
+        self.add_point((x << 16) | (y & 0x00_00_FF_FF))
+
+    def add_point(self, p):
+        self.index += 1
+        if self.index >= self.max_size:
+            # history.index = 0
+            print("outta space")
+            return
+        self.points[self.index] = p
+        self.latest_valid_index = self.index
+
+    def get_point(self, index):
+        return self.points[index]
 
 
 # these are standalone methods because I don't want to figure out how to use an object method in a callback
@@ -71,15 +107,15 @@ def go_back(*args):
     print(args)
     while args[0].value() == 0:
         if history.index > 0:
-            history.index -= 1
             # erase the pixel
             tft.fill_circle(
-                history.x[history.index],
-                history.y[history.index],
+                history.x(),
+                history.y(),
                 3,
                 bg_color,
             )
-            time.sleep(history.sleep_time)
+            history.index -= 1
+            time.sleep_ms(history.sleep_time)
 
 
 def go_back_async(*args):
@@ -89,14 +125,14 @@ def go_back_async(*args):
     global history
     button = args[0]
     if history.index > 0:
-        history.index -= 1
         # erase the pixel
         tft.fill_circle(
-            history.x[history.index],
-            history.y[history.index],
+            history.x(),
+            history.y(),
             3,
             bg_color,
         )
+        history.index -= 1
         Timer(
             mode=Timer.ONE_SHOT,
             period=history.sleep_time,
@@ -108,11 +144,9 @@ def go_forward(*args):
     global history
     while args[0].value() == 0:
         if history.index < history.latest_valid_index:
-            tft.fill_circle(
-                history.x[history.index], history.y[history.index], 3, color
-            )
             history.index += 1
-            time.sleep(history.sleep_time)
+            tft.fill_circle(history.x(), history.y(), 3, color)
+            time.sleep_ms(history.sleep_time)
 
 
 def go_forward_async(*args):
@@ -122,8 +156,8 @@ def go_forward_async(*args):
     global history
     button = args[0]
     if history.index < history.latest_valid_index:
-        tft.fill_circle(history.x[history.index], history.y[history.index], 3, color)
         history.index += 1
+        tft.fill_circle(history.x(), history.y(), 3, color)
         Timer(
             mode=Timer.ONE_SHOT,
             period=history.sleep_time,
@@ -137,19 +171,26 @@ def go_forward_async(*args):
 def send_drawing(*args):
     irda_uart.reset_machines()
     print(f"Sending size: {history.index}")
+    send_start = time.time_ns()
     irda_uart.send_word(history.index)
-    time.sleep(history.sleep_time)
+    asyncio.sleep_ms(history.sleep_time)
+    # time.sleep_ms(history.sleep_time)
     irda_uart.send_word(color)
-    time.sleep(history.sleep_time)
-    for i in range(history.index):
-        p_x = history.x[i]
-        p_y = history.y[i]
-        print(f"{(p_x << 16) | p_y:032b}")
-        irda_uart.send_word((p_x << 16) | p_y)
-        # time.sleep(history.sleep_time)
+    asyncio.sleep_ms(history.sleep_time)
+    # time.sleep_ms(history.sleep_time)
+    for i in range(1, history.index + 1):
+        # p_x = history.x[i]
+        # p_y = history.y[i]
+        # print(f"{history.get_point(i):032b}")
+        irda_uart.send_word(history.get_point(i))
+
+    print("sent")
+    print(f"took {(time.time_ns() - send_start)/10**6} ms")
+    # print("why so slow??")
 
 
 def receive_drawing(*args):
+    print("receiving...")
     irda_uart.reset_machines()
     size = None
     other_color = None
@@ -159,16 +200,18 @@ def receive_drawing(*args):
         size = irda_uart.receive_word()
         if size is not None:
             print(size)
+        # asyncio.sleep(0)
     if size is None:
-        # print("No size :(")
+        print("No size :(")
         return
     print(f"{size:032b}")
     while other_color is None and args[0].value() == 0:
         other_color = irda_uart.receive_word()
         if other_color is not None:
             print(other_color)
+        # asyncio.sleep(0)
     if other_color is None:
-        # print("No size :(")
+        print("No color :(")
         return
     while args[0].value() == 0 and rxed < size:
         val = None
@@ -176,55 +219,32 @@ def receive_drawing(*args):
             val = irda_uart.receive_word()
         if val is None:
             break
-        p_y = val & 0x00_00_FF_FF
-        p_x = val >> 16
         # print(f"{val:032b}")
-        # print(f"{p_x}, {p_y}")
-        tft.pixel(p_x, p_y, other_color)
-        history.x[history.index + rxed] = p_x
-        history.y[history.index + rxed] = p_y
+        history.add_point(val)
         rxed += 1
-        # print(f"Received {rxed} of {size} words")
-    # now fill in the pixel lines with better ones
-    for _ in range(rxed):
-        # print("what's happening")
-        tft.fill_circle(
-            history.x[history.index], history.y[history.index], 3, other_color
-        )
-        # print("how many times")
-        history.index += 1
-        history.latest_valid_index = history.index
+        # print(f"{history.x()}, {history.y()}")
+        tft.fill_circle(history.x(), history.y(), 3, other_color)
 
 
-def set_up_buttons():
-    start_button = Pin(board_config.START_BUTTON, mode=Pin.IN, pull=Pin.PULL_UP)
-    start_button.irq(clear_screen, trigger=Pin.IRQ_FALLING)
+# def set_up_buttons():
+start_button = Pin(board_config.START_BUTTON, mode=Pin.IN, pull=Pin.PULL_UP)
+start_button.irq(clear_screen, trigger=Pin.IRQ_FALLING)
 
-    a_button = Pin(board_config.A_BUTTON, mode=Pin.IN, pull=Pin.PULL_UP)
-    a_button.irq(go_forward_async, trigger=Pin.IRQ_FALLING)
+a_button = Pin(board_config.A_BUTTON, mode=Pin.IN, pull=Pin.PULL_UP)
+a_button.irq(go_forward, trigger=Pin.IRQ_FALLING)
 
-    b_button = Pin(board_config.B_BUTTON, mode=Pin.IN, pull=Pin.PULL_UP)
-    b_button.irq(go_back_async, trigger=Pin.IRQ_FALLING)
+b_button = Pin(board_config.B_BUTTON, mode=Pin.IN, pull=Pin.PULL_UP)
+b_button.irq(go_back, trigger=Pin.IRQ_FALLING)
 
-    right_button = Pin(board_config.RIGHT_BUTTON, mode=Pin.IN, pull=Pin.PULL_UP)
-    right_button.irq(send_drawing, trigger=Pin.IRQ_FALLING)
+right_button = Pin(board_config.RIGHT_BUTTON, mode=Pin.IN, pull=Pin.PULL_UP)
+right_button.irq(send_drawing, trigger=Pin.IRQ_FALLING)
 
-    left_button = Pin(board_config.LEFT_BUTTON, mode=Pin.IN, pull=Pin.PULL_UP)
-    left_button.irq(receive_drawing, trigger=Pin.IRQ_FALLING)
+left_button = Pin(board_config.LEFT_BUTTON, mode=Pin.IN, pull=Pin.PULL_UP)
+left_button.irq(receive_drawing, trigger=Pin.IRQ_FALLING)
 
 
-irda_uart = IrDA_UART(board_config.IRDA_TX_PIN, board_config.IRDA_RX_PIN, 115200)
-# real_ish_spi = SoftSPI(
-#     baudrate=62_500_000,
-#     polarity=1,
-#     phase=1,
-#     sck=Pin(board_config.DISPLAY_SCK_PIN, Pin.OUT),
-#     mosi=Pin(board_config.DISPLAY_DO_PIN, Pin.OUT),
-#     miso=Pin(28),
-# )  # SoftSPI needs a MISO pin, used one of the gpio on the SAO
-# spi = PIO_SPI()
+irda_uart = IrDA_UART(board_config.IRDA_TX_PIN, board_config.IRDA_RX_PIN, 19200)
 tft = st7789.ST7789V()
-# tft.init()
 touch = Touchscreen()
 history = PaintHistory()
 
@@ -233,21 +253,25 @@ bg_color = random_bg_color()
 
 
 def run():
-    set_up_buttons()
+    # set_up_buttons()
     clear_screen()
     while True:
-        x, y = touch.get_one_touch_in_pixels(verbose=False)
-        # tft.pixel(p_x, p_y, color)
-        tft.fill_circle(x, y, 3, color)
-        history.x[history.index] = x
-        history.y[history.index] = y
-        history.index += 1
-        if history.index == history.max_size:
-            history.index = 0
-            print("outta space")
-        history.latest_valid_index = history.index
-        # tft.draw_frame()
-        # time.sleep(1 / 40)
+        # if (start_button.value() == 0):
+        #     clear_screen(start_button)
+        # if (a_button.value() == 0):
+        #     go_forward_async(a_button)
+        # if (b_button.value() == 0):
+        #     go_back_async(b_button)
+        # if right_button.value() == 0:
+        #     send_drawing(right_button)
+        # if left_button.value() == 0:
+        #     receive_drawing(left_button)
+
+        t = touch.get_one_touch_in_pixels(verbose=False)
+        if t is not None:
+            x, y = t
+            tft.fill_circle(x, y, 3, color)
+            history.add_x_y(x, y)
 
 
 run()

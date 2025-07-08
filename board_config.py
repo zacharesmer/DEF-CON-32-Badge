@@ -21,6 +21,12 @@ TOUCH_I2C_SCL = 3
 IRDA_TX_PIN = 26
 IRDA_RX_PIN = 27
 IRDA_PIO = 1
+IRDA_TX_SM = 1
+IRDA_RX_SM = 0
+IRDA_TX_REQ_SEL = 9  # PIO1 TX1
+############################### PIO1 base    IRQ0_INTE(nable)
+# IRDA_RX_SM_IRQ0_INTE_REG = 0x5030_0000 + 0x170
+# IRDA_RX_NOT_EMPTY_MASK = 0x01  # conveniently the last bit
 
 
 RIGHT_BUTTON = 16

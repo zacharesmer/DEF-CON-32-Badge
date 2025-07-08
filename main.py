@@ -1,0 +1,3 @@
+# import paint
+
+# paint.run()
