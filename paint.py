@@ -7,6 +7,7 @@ from machine import Pin, Timer
 import random
 from array import array
 import rp2
+from ws2812 import WS2812
 
 import asyncio
 
@@ -40,7 +41,9 @@ class PaintHistory:
         self.max_size = 20_000
         self.sleep_time = 1
 
-        self.points = array("i", [0] * self.max_size)
+        self.points = array("i", [0 for _ in range(self.max_size)])
+
+        self.np = WS2812()
 
     def clear(self):
         self.index = 0
@@ -229,6 +232,8 @@ class PaintProgram:
             val = None
             while val is None and args[0].value() == 0:
                 val = self.irda_uart.receive_word()
+                if val is None:
+                    print("wait")
             if val is None:
                 break
             # print(f"{val:032b}")
@@ -240,6 +245,7 @@ class PaintProgram:
     def run(self):
         # set_up_buttons()
         self.clear_screen()
+        prev_x, prev_y = (0, 0)
         while True:
             # if (start_button.value() == 0):
             #     clear_screen(start_button)
@@ -255,8 +261,11 @@ class PaintProgram:
             t = self.touch.get_one_touch_in_pixels(verbose=False)
             if t is not None:
                 x, y = t
-                self.tft.fill_circle(x, y, 3, self.color)
-                self.history.add_x_y(x, y)
+                # ignore any touches that are really close to the last recorded touch
+                if (x - prev_x) ** 2 + (y - prev_y) ** 2 > 5:
+                    prev_x, prev_y = t
+                    self.tft.fill_circle(x, y, 3, self.color)
+                    self.history.add_x_y(x, y)
 
 
 PaintProgram().run()

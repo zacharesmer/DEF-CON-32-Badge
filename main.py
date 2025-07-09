@@ -1,3 +1,3 @@
 # import paint
 
-# paint.run()
+# paint.PaintProgram().run()
