@@ -34,16 +34,20 @@ class WS2812:
 
     def __setitem__(self, index, val):
         r, g, b = val
-        self.pixels[index] = ((r & 0xFF) << 24) | ((g & 0xFF) << 16) | ((b & 0xFF) << 8)
+        self.pixels[index] = ((r & 0xFF) << 16) | ((g & 0xFF) << 24) | ((b & 0xFF) << 8)
 
     def __getitem__(self, index):
-        r = (self.pixels[index] >> 24) & 0xFF
-        g = (self.pixels[index] >> 16) & 0xFF
+        r = (self.pixels[index] >> 16) & 0xFF
+        g = (self.pixels[index] >> 24) & 0xFF
         b = (self.pixels[index] >> 8) & 0xFF
         return (r, g, b)
 
     def __len__(self):
         return self.num_leds
+
+    def fill(self, value):
+        for p in range(self.num_leds):
+            self[p] = value
 
     def write(self):
         for p in self.pixels:
