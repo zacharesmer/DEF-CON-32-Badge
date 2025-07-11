@@ -2,10 +2,11 @@ import board_config as bc
 from screen.st7789v import ST7789V
 from screen.touch import Touchscreen
 from pirda.irda import IrDA_UART
-from ws2812 import WS2812
+from other_hw.ws2812 import WS2812
+from pirda.cir import CIR
 from machine import Pin
 import json
-from buzzer import Buzzer
+from other_hw.buzzer import Buzzer
 import os
 
 
@@ -26,6 +27,7 @@ class DC32_Badge:
         self.irda_uart = IrDA_UART(baud_rate=19200)
         self.neopixels = WS2812(auto_write=True)
         self.speaker = Buzzer()
+        self.cir = CIR()
         self.setup_buttons()
 
     def setup_buttons(self):

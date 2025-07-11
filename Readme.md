@@ -1,17 +1,23 @@
 # DEF CON 32 Badge Micropython Toys
-Some toys/examples that use the IrDA module, neopixels, and touch screen of the DC32 badge. It's all written in Micropython, so no need to compile extra C modules unless you want to. 
+Some example programs and a launcher that use the IrDA module, neopixels, and touch screen of the DC32 badge. It's all written in Micropython, so no need to compile extra C modules unless you really want to. 
 
-I will make a version of this with the main python modules frozen in, and USB mass storage support, so you can plug it in and load images and things into the flash. I would love to get the SD card accessible but doing that in MicroPython has turned out to be complicated and mostly unexplored territory, so I haven't done it yet.
+I will make a version of this with the main python modules frozen in, and USB mass storage support, so you can plug it in and load images and things into the flash. I would love to get the SD card accessible but doing that in MicroPython has turned out to be complicated and mostly unexplored territory, so I haven't.
 
-If you have the extra PSRAM chip soldered on, there's also uf2 to actually take advantage of it (as much as micro python can, anyway). If you don't have that and you're interested, get yourself a APS6404L-3SQR-SN and stick it in the blank spot next to the D-Pad.
+If you have an extra PSRAM chip soldered on, there's also uf2 to actually take advantage of it (as much as micro python can, anyway). If you don't have that and you're interested, get yourself a APS6404L-3SQR-SN and stick it in the blank spot next to the D-Pad.
 
 # Configuration
-The system configuration (colors, animations, calibration, etc.) is written to a json file in the flash memory, so it should persist across restarts. If it's gotten messed up somehow, there is a default file in this repo you can copy over.
+The system configuration (colors, animations, calibration, etc.) is written to a json file in the flash memory, so it should persist across restarts. If it's gotten messed up somehow, the badge will attempt to regenerate a blank file. There is also a default file in this repo you can copy over.
+
+# IR Remote
+Yes, you can use your badge as a TV remote! Currently it can only record and replay raw signals, so it won't work with most existing recordings, but I want to fix that soon. If you would like to help add support for a protocol, feel free! The easiest way to do it would be generating an array/list of timings, then sending it using the already made `send_timings` function. It would also be useful to set up tools to parse IR files from the IR DB.
+
+You can save and read files to/from the internal flash and the SD card. 
 
 # Paint
 Draw on the screen and send your drawing to another person with Infrared! 
 
-Note: the type of infrared signal used is IrDA SIR and is not compatible with the Flipper or other universal remotes, because it does not use a carrier wave. 
+Note: this app uses IrDA SIR and is not compatible with the Flipper or other universal remotes, because it does not use a carrier wave. 
+
 ## Controls
 
 Left: Wait to receive a drawing
@@ -25,11 +31,6 @@ A: Redo
 Start: Clear screen
 
 Select: Menu (to be implemented)
-
-# Universal remote
-Record IR signals (38kHz Consumer IR, this one is compatible with the Flipper) and replay them. I haven't implemented any fancy decoding yet, it's just recording the raw timings. The files are the same format as the Flipper Zero, but only raw format flipper files will work on the badge. 
-
-Save the files to the SD card or flash.
 
 # Adding other programs
 

@@ -3,6 +3,7 @@ from machine import Timer, Pin
 from screen.st7789v_definitions import WHITE, BLACK
 import asyncio
 import gc
+import os
 
 
 class MainMenu:
@@ -15,11 +16,10 @@ class MainMenu:
 
     def load_programs(self):
         # built in programs go here
-        self.programs = [
-            "calibrate",
-            "paint",
-        ]
+        self.programs = ["calibrate", "paint", "ir_remote"]
         # TODO: load others from flash
+        # for f in os.ilistdir("programs"):
+        #     print(f)
 
     def setup_buttons(self):
         self.badge.up_button.irq(self.go_up, Pin.IRQ_FALLING)
@@ -52,6 +52,7 @@ class MainMenu:
         ## danger danger
         modname = self.programs[self.current_selection]
         mod = __import__(modname)
+        # print(dir(mod))
         self.current_program = mod.Program(self.badge)
         print(f"Free: {gc.mem_free()}")
         gc.collect()
@@ -80,7 +81,6 @@ class MainMenu:
         asyncio.create_task(self.open())
 
     async def open(self):
-        # self.close_the_task = True
         print(self.current_program)
         # stop the current program if it's running
         if self.current_program is not None:
