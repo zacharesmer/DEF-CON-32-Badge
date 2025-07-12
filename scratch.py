@@ -24,65 +24,15 @@
 import badge
 import board_config as bc
 import time
-
-badgey = badge.DC32_Badge()
-# badgey.calibrate_touchscreen()
-
-# import gc
-
-# print(f"free: {gc.mem_free()}")
-# gc.collect()
-# print(f"free: {gc.mem_free()}")
-# from paint import PaintProgram
-
-# PaintProgram(badgey).run()
+import ir_remote
+import asyncio
 
 
-Weight_of_the_World = [
-    (1 / 2, "L6"),
-    (1 / 4, "3"),
-    (1 / 4, "2"),
-    (1 / 4, "2"),
-    (1 / 2, "5"),
-    (1 / 4, "L6"),
-    (1 / 4, "L6"),
-    (1 / 4, "3"),
-    (1 / 4, "2"),
-    (1 / 4, "5"),
-    (1 / 1, "5"),
-    (1 / 2, "L6"),
-    (1 / 4, "3"),
-    (1 / 4, "2"),
-    (1 / 4, "2"),
-    (1 / 2, "6"),
-    (1 / 4, "2"),
-    (1 / 4, "2"),
-    (1 / 4, "3"),
-    (1 / 4, "2"),
-    (1 / 4, "6"),
-    (1 / 1, "6"),
-    (1 / 2, "L6"),
-    (1 / 4, "3"),
-    (1 / 4, "2"),
-    (1 / 4, "2"),
-    (1 / 2, "5"),
-    (1 / 4, "L6"),
-    (1 / 4, "L6"),
-    (1 / 4, "3"),
-    (1 / 4, "2"),
-    (1 / 4, "5"),
-    (1 / 1, "5"),
-    (1 / 2, "L6"),
-    (1 / 4, "3"),
-    (1 / 4, "2"),
-    (1 / 4, "2"),
-    (1 / 2, "6"),
-    (1 / 4, "2"),
-    (1 / 4, "2"),
-    (1 / 4, "3"),
-    (1 / 4, "2"),
-    (1 / 4, "6"),
-    (1 / 1, "6"),
-]
+badg = badge.DC32_Badge()
 
-badgey.speaker.play(Weight_of_the_World, tempo=90, freq_multiple=1, output=0)
+p = ir_remote.Program(badg)
+
+asyncio.run(p.run())
+# recordings = []
+# with open("test.ir", "r") as f:
+#     recordings = p.read_ir_file(f)
