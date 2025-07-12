@@ -5,7 +5,9 @@ from pirda.irda import IrDA_UART
 from other_hw.ws2812 import WS2812
 from pirda.cir import CIR
 from machine import Pin, SPI
-from sdcard import SDCard
+from sdcard import (
+    SDCard,
+)  # consider importing this late or actually including a copy of the micropython lib files
 import json
 from other_hw.buzzer import Buzzer
 import os

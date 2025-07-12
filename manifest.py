@@ -2,6 +2,7 @@
 include("$(PORT_DIR)/boards/manifest.py")
 package("pirda")
 package("screen")
+require("sdcard")
 
 ## these will probably change idk
 # module("ws2812.py")

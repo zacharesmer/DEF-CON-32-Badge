@@ -22,8 +22,9 @@ class Program(MenuProgram):
         self.root_dir = os.getcwd()
         # TODO: add support for subdirectories
         self.mode = "Directory"  # modes can be "Directory", "File", and others tbd
-        # self.title = "IR Remote"
+        self.title = ""  # will be filled in later from current directory
         self.current_selection = 0
+        self.open_filename = ""
         pass
 
     async def run(self):
@@ -51,8 +52,8 @@ class Program(MenuProgram):
                     name = "Unimplemented"
                     output.append((name, ()))
             elif split_line[0] == "data:":
-                # print(split_line[1:])
-                output.append((name, [int(i) for i in split_line[1:]]))
+                print(split_line[1:])
+                output.append((name, [int(i) for i in split_line[1:]], "Existing"))
         return output
 
     # def append_ir_code(self, )
@@ -66,6 +67,7 @@ class Program(MenuProgram):
                 os.chdir(selection_name)
                 self.show(refresh=True)
             elif selection_type == _OS_TYPE_FILE:
+                self.open_filename = selection_name
                 self.mode = "File"
                 self.show(refresh=True)
             # TODO: handle "new file" and "new directory" options
@@ -77,8 +79,13 @@ class Program(MenuProgram):
                 asyncio.create_task(self.make_new_file())
                 pass
         elif self.mode == "File":
-            self.send_selected_code()
+            selection_name, _, type = self.options[self.current_selection]
+            if type == "Existing":
+                self.send_selected_code()
+            elif type == "Record New":
+                asyncio.create_task(self.record_new_code())
             # TODO: handle "record a code" option
+
         # return super().select(*args)
 
     def go_back(self, arg):
@@ -112,13 +119,12 @@ class Program(MenuProgram):
         self.options.append(("New Dir", _TYPE_NEW_DIR))
 
     def refresh_recordings_from_current_file(self):
-        filename = self.options[self.current_selection][0]
-        self.title = filename
-        with open(f"{filename}", "r") as f:
+        self.title = self.open_filename
+        with open(f"{self.open_filename}", "r") as f:
             self.options = self.read_ir_file(f)
             # print(self.options)
         # TODO: add an "Add" option, maybe in a special color or something
-        self.options.append(("New Recording", None))
+        self.options.append(("New Recording", None, "Record New"))
         # TODO: override show to color types of files differently
         # self.show()
 
@@ -143,8 +149,31 @@ class Program(MenuProgram):
         print("made a file :)")
 
     def send_selected_code(self):
+        # todo: when I support more types of signal, I'll decode them here before sending
         self.badge.cir.send_timings(self.options[self.current_selection][1])
 
+    # capture a new code and save it to the currently open file
+    async def record_new_code(self):
+        self.badge.screen.fill(bg_color)
+        self.badge.screen.frame_buf.text("Wating for a signal!", 10, 10, fg_color)
+        code = await self.badge.cir.receive_one_signal()
+        name = await TextEntry(self.badge).get_text(16)
+        to_write = [
+            "#",
+            f"name: {name}",
+            "type: raw",
+            "frequency: 38000",
+            "duty_cycle: 0.330000",
+            f"data: {" ".join([str(t) for t in code])}",
+        ]
+        with open(self.open_filename, "a") as f:
+            f.write("\n".join(to_write))
+            f.write("\n")
+        self.show(refresh=True)
+
+
+fg_color = 0x00_00
+bg_color = 0xFF_FF
 
 _OS_TYPE_FILE = 0x8000
 _OS_TYPE_DIR = 0x4000
