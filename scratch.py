@@ -24,15 +24,17 @@
 import badge
 import board_config as bc
 import time
-import ir_remote
+import color_selector
 import asyncio
 
 
 badg = badge.DC32_Badge()
 
-p = ir_remote.Program(badg)
+p = color_selector.ColorSelector(badg)
 
-asyncio.run(p.run())
+asyncio.run(p.get_color())
 # recordings = []
 # with open("test.ir", "r") as f:
 #     recordings = p.read_ir_file(f)
+while True:
+    pass

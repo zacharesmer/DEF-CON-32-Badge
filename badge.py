@@ -11,7 +11,7 @@ from sdcard import (
 import json
 from other_hw.buzzer import Buzzer
 import os
-import time
+import asyncio
 
 
 class DC32_Badge:
@@ -23,11 +23,9 @@ class DC32_Badge:
         prefs = self.read_preferences()
         # print(prefs)
         self.screen = ST7789V()
-        # TODO if no calibration is set, run the calibration program
-        self.touch = Touchscreen(
-            x_calibration=prefs.get("x_calibration"),
-            y_calibration=prefs.get("y_calibration"),
-        )
+        x_calibration = prefs.get("x_calibration")
+        y_calibration = prefs.get("y_calibration")
+        self.touch = Touchscreen(x_calibration, y_calibration)
         self.irda_uart = IrDA_UART(baud_rate=19200)
         self.neopixels = WS2812(auto_write=True)
         self.speaker = Buzzer()
@@ -55,7 +53,7 @@ class DC32_Badge:
         try:
             sd = SDCard(spi=spi, cs=cs)
             os.mount(sd, "/sd")
-            print(os.listdir("sd"))
+            # print(os.listdir("sd"))
         except OSError as e:
             print(e)
             self.screen.fill(0x00_00)
@@ -95,14 +93,22 @@ class DC32_Badge:
         for p in self.back_pixels:
             self.neopixels[p] = rgb
 
+    async def set_touch_calibration(self, prefs):
+        print("hiiiii")
+        # if no calibration is set, run the calibration program
+
     def read_preferences(self):
         prefs = {}
-        with open("preferences.json", "r") as prefs_file:
-            try:
-                prefs = json.load(prefs_file)
-            except ValueError as ve:
-                # TODO: this means the JSON format is borked, consider copying a default config file
-                print(ve)
+        try:
+            with open("preferences.json", "r") as prefs_file:
+                try:
+                    prefs = json.load(prefs_file)
+                except ValueError as ve:
+                    # TODO: this means the JSON format is borked, consider copying a default config file
+                    print(ve)
+        except OSError as e:
+            print(e)
+            print("couldn't open file, returning empty preferences")
         return prefs
 
     def write_preferences(self, prefs):

@@ -15,6 +15,10 @@ import asyncio
 # import micropython
 # micropython.alloc_emergency_exception_buf(100)
 
+# TODO: this uses way too much memory. If I add color selectors on the sides to take up enough space
+# that the drawing area is only 240 * 255, I can take up half as much space storing the history,
+# which I think would fix it. Also if I can figure out why the memory isn't getting freed that could help too...
+
 
 class Program:
     def __init__(self, badge=None):
@@ -198,6 +202,7 @@ class Program:
                     prev_x, prev_y = t
                     self.tft.fill_circle(x, y, 3, self.color.c565)
                     self.history.add_x_y(x, y)
+        self.exit()
 
     async def exit(self):
         self.is_running = False

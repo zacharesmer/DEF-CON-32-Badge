@@ -1,4 +1,9 @@
-# TODO: factor out some reusable stuff for programs that are mostly a menu
+"""
+A base class for a program that's mostly a menu
+
+Supports paging, up, down, left, and right navigation
+Unfortunately not holding down the buttons yet but I should really add it
+"""
 
 from machine import Pin
 from screen.st7789v_definitions import WHITE, BLACK
@@ -9,7 +14,7 @@ class MenuProgram:
     def __init__(self, badge):
         self.badge = badge
         self.current_selection = 0
-        self.options = []
+        # self.options = []
         self.column_elements = 14
         self.num_columns = 2
         self.view_start = 0
@@ -34,6 +39,10 @@ class MenuProgram:
         self.badge.b_button.irq(None)
 
     def go_up(self, arg):
+        """
+        handle up button press
+        note to me so I don't mess this up a third time: the button is up, but the number goes *down*
+        """
         self.current_selection = (self.current_selection - 1) % len(self.options)
         if self.current_selection < self.view_start:
             self.view_start = self.current_selection - self.column_elements + 1
@@ -41,6 +50,10 @@ class MenuProgram:
         self.show()
 
     def go_down(self, arg):
+        """
+        handle up button press
+        note to me so I don't mess this up a third time: the button is down, but the number goes *up*
+        """
         # print("down")
         self.current_selection = (self.current_selection + 1) % len(self.options)
         if self.current_selection >= self.view_start + self.view_elements:

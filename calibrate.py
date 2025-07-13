@@ -13,8 +13,8 @@ class Program:
 
         black = 0x0
         white = 0xFF_FF
-        x_px = (20, 20, 300, 300)
-        y_px = (20, 220, 20, 220)
+        x_px = (40, 40, 280, 280)
+        y_px = (40, 200, 40, 200)
         x_touches = []
         y_touches = []
         for i in range(len(x_px)):

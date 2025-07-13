@@ -38,7 +38,6 @@ class Program(MenuProgram):
         # parse the data into an array of names and lists of timings
         output = []
         name = None
-        data = None
         line = f.readline()
         while line != "":
             split_line = line.split()
@@ -52,8 +51,11 @@ class Program(MenuProgram):
                     name = "Unimplemented"
                     output.append((name, ()))
             elif split_line[0] == "data:":
-                print(split_line[1:])
-                output.append((name, [int(i) for i in split_line[1:]], "Existing"))
+                # print(split_line[1:])
+                try:
+                    output.append((name, [int(i) for i in split_line[1:]], "Existing"))
+                except Exception as e:
+                    print(e)
         return output
 
     # def append_ir_code(self, )
@@ -94,6 +96,8 @@ class Program(MenuProgram):
         elif self.mode == "Directory":
             if os.getcwd() != self.root_dir:
                 os.chdir("..")
+            else:
+                self.is_running = False
         elif self.mode == "Recording":
             self.badge.cir.cancel = True
         self.show(refresh=True)
@@ -115,8 +119,15 @@ class Program(MenuProgram):
         # set the mode so the OK button callback reads and displays the file
         self.options = []
         for f in os.ilistdir(os.getcwd()):
-            # store the file's name and type
-            self.options.append((f[0], f[1]))
+            # we store the file's name and type
+            fname, ftype, *_ = f
+            # only only visible directories and .ir files
+            if (
+                fname.endswith(".ir")
+                or ftype == _OS_TYPE_DIR
+                and not fname.startswith(".")
+            ):
+                self.options.append((f[0], f[1]))
         self.options.append(("New File", _TYPE_NEW_FILE))
         self.options.append(("New Dir", _TYPE_NEW_DIR))
 
@@ -132,7 +143,7 @@ class Program(MenuProgram):
 
     async def make_new_dir(self):
         self.un_setup_buttons()
-        name = await TextEntry(self.badge).get_text(10)
+        name = await TextEntry(self.badge, 16, "Directory name:").get_text()
         if name is not None:
             os.mkdir(name)
         self.setup_buttons()
@@ -141,7 +152,7 @@ class Program(MenuProgram):
 
     async def make_new_file(self):
         self.un_setup_buttons()
-        name = await TextEntry(self.badge).get_text(10)
+        name = await TextEntry(self.badge, 16, "Directory name:").get_text()
         if name is not None:
             self.make_empty_ir_file(f"{name}.ir")
         self.setup_buttons()
@@ -165,7 +176,9 @@ class Program(MenuProgram):
         self.mode = "File"
         if code is not None:
             self.un_setup_buttons()
-            name = await TextEntry(self.badge).get_text(16)
+            name = await TextEntry(
+                self.badge, 16, f"Got {len(code)} samples. Enter a name:"
+            ).get_text()
             if name is not None:
                 to_write = [
                     "#",

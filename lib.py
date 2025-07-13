@@ -2,8 +2,6 @@ from math import floor
 
 
 # values are floats in range 0 to 1
-
-
 def hsv_to_rgb(h, s, v):
     if s == 0.0:
         r = (v, v, v)

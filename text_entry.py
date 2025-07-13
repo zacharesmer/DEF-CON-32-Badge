@@ -5,13 +5,16 @@ from machine import Pin
 
 
 class TextEntry:
-    def __init__(self, badge):
+    def __init__(self, badge, max_length=16, prompt="Enter text:"):
         self.badge = badge
+        self.max_length = max_length
+        self.prompt = prompt
         self.key_height = 32
         self.key_width = 32
         self.kb_start_height = bc.SCREEN_HEIGHT - self.key_height * 4 - 10
-        self.text_start_height = 32
-        self.text_left_side = bc.SCREEN_WIDTH // 2 - 100
+        self.prompt_start_height = self.kb_start_height - 64
+        self.text_start_height = self.kb_start_height - 32
+        self.text_left_side = 32
         self.caps = False
         self.text_entered = ""
         row0 = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
@@ -34,7 +37,7 @@ class TextEntry:
     # async def run(self):
     #     pass
 
-    async def get_text(self, max_length):
+    async def get_text(self):
         self.setup_buttons()
         self.show_keyboard()
         self.is_running = True
@@ -54,7 +57,7 @@ class TextEntry:
                         if len(self.text_entered) > 0:
                             return self.text_entered
                     else:
-                        if len(self.text_entered) < max_length:
+                        if len(self.text_entered) < self.max_length:
                             self.text_entered = f"{self.text_entered}{letter}"
                     last_letter_at = time.ticks_ms()
                     self.show_keyboard()
@@ -70,6 +73,17 @@ class TextEntry:
         self.badge.screen.frame_buf.fill(bg_color + 0x6)
         self.badge.screen.frame_buf.text(
             self.text_entered, self.text_left_side, self.text_start_height, fg_color
+        )
+        if len(self.text_entered) < self.max_length:
+            self.badge.screen.frame_buf.rect(
+                self.text_left_side + 8 * len(self.text_entered),
+                self.text_start_height - 8,
+                8,
+                16,
+                fg_color,
+            )
+        self.badge.screen.frame_buf.text(
+            self.prompt, self.text_left_side, self.prompt_start_height, fg_color
         )
         height = self.kb_start_height
         left_position = 0
