@@ -1,0 +1,159 @@
+; IrDA physical layer "EnDec" (Encoder/Decoder)
+
+; *************************
+; IrDA UART transmit
+; must run at 16 * baud rate
+; Wraps 8 bits of data into an 8n1 (start bit + 8 data bits + stop bit) uart frame and encodes it into IR pulses
+; *************************
+
+.program irda_uart_tx
+
+.lang_opt python autopull = False
+.lang_opt python set_init = rp2.PIO.OUT_LOW
+.lang_opt python out_shiftdir = rp2.PIO.SHIFT_LEFT
+.lang_opt python fifo_join = rp2.PIO.JOIN_TX
+
+.wrap_target
+    pull block                      ; wait for some data from the cpu
+    ; the stop bit will need to be 2 cycles shorter to make up for the pull at the beginning
+    set pins 1              [2]     ; send the start bit
+    set pins 0              [9]     ; wait enough so that there's one full bit length before sending the first data data bit
+    set y 7                         ; counter for the data bits
+    data_bits:
+        out x 1                     ; get next data bit to send
+        jmp !x, pulse               ; logical 0 = ir high
+            nop             [12]    ; need to take up all 16 cycles
+            jmp y-- data_bits
+            jmp stop_bit
+        pulse:
+            set pins, 1     [2]     ; pulse lasts 3/16 cycles
+            set pins, 0     [9]    ; set pin low and wait long enough to fill up 16 cycles
+            jmp y-- data_bits
+    stop_bit:
+        set pins 0          [14]    ; stop bit is 16 cycles but 1 of them is taken up by pull instruction after we wrap around
+    .wrap
+
+
+; *************************
+; IrDA UART receive (9600 baud)
+; 
+; must run at 6 MHz to divide evenly to the system clock (150MHz) and 9600 baud
+; each bit will take 625 cycles
+; 1.6 us (min pulse) is 9.6 cycles
+; 
+; *************************
+.program irda_uart_rx_9600
+
+.lang_opt python autopush = False
+.lang_opt python in_shiftdir = rp2.PIO.SHIFT_LEFT
+.lang_opt python fifo_join = rp2.PIO.JOIN_RX
+
+.wrap_target
+idle:
+    wait 0 pin 0                [5]         ; wait for start bit and delay a little less than min pulse width
+    jmp pin idle                            ; if it's high again, the pulse was way less than the minimum. ignore it.
+    nop                         [3]         ; otherwise that's our start bit! delay extra just the first time so we
+                                            ; end up reading the pin in the middle of the pulse instead of right at the very beginning
+    set y 7                                 ; counter for the data bits, use it as part of the extra delay
+    ; One bit should take up 625 cycles, which is too big to store directly in a register
+    ; Instead, we'll loop around some nops to get up to 625 cycles
+    data_bits:      
+        set x 24                            ; x = 24 for 25 delays because the jmp will delay even when x is 0  
+        spin:                     
+            jmp x-- spin        [23]        ; 25 loops * 24 cycles per loop = 600 cycles
+        nop                     [16]        ; the loop got us to 608, add enough to get to 625 
+        in pins 1               [5]         ; start of next bit, wait to make up for the cycles at the beginning
+        jmp y-- data_bits                   
+    ; Check the stop bit (if the pin is low, that means there's an IR pulse and something went wrong)
+    set x 24                                ; x = 24 for 25 delays because the jmp will delay even when x is 0 
+    spin2:                     
+        jmp x-- spin2       [23]            ; 25 loops * 24 cycles per loop = 600 cycles
+    nop                     [16]            ; the loop got us to 608, add enough to get to 625 
+    jmp pin valid_stop
+        jmp idle
+    valid_stop:
+        push
+.wrap
+
+; *************************
+; IrDA UART receive (19200 baud)
+; 
+; F it let's run at 12 MHz, which doesn't divide evenly to the system clock (150MHz) but does divide 19200 baud
+; each bit will take 625 cycles
+; 1.6 us (min pulse) is 19.2 cycles
+; 
+; *************************
+.program irda_uart_rx_19200
+
+.lang_opt python autopush = False
+.lang_opt python in_shiftdir = rp2.PIO.SHIFT_LEFT
+.lang_opt python fifo_join = rp2.PIO.JOIN_RX
+
+.wrap_target
+idle:
+    wait 0 pin 0                [10]         ; wait for start bit and delay a little less than min pulse width
+    jmp pin idle                            ; if it's high again, the pulse was way less than the minimum. ignore it.
+    nop                         [7]         ; otherwise that's our start bit! delay extra just the first time so we
+                                            ; end up reading the pin in the middle of the pulse instead of right at the very beginning
+    set y 7                                 ; counter for the data bits, use it as part of the extra delay
+    ; One bit should take up 625 cycles, which is too big to store directly in a register
+    ; Instead, we'll loop around some nops to get up to 625 cycles
+    data_bits:      
+        set x 24                            ; x = 24 for 25 delays because the jmp will delay even when x is 0  
+        spin:                     
+            jmp x-- spin        [23]        ; 25 loops * 24 cycles per loop = 600 cycles
+        nop                     [12]        ; the loop got us to 612, add enough to get to 625 
+        in pins 1               [14]         ; start of next bit, wait to make up for the cycles at the beginning
+        jmp y-- data_bits                   
+    ; Check the stop bit (if the pin is low, that means there's an IR pulse and something went wrong)
+    set x 24                                ; x = 24 for 25 delays because the jmp will delay even when x is 0 
+    spin2:                     
+        jmp x-- spin2           [23]        ; 25 loops * 24 cycles per loop = 600 cycles
+    nop                         [12]        ; the loop got us to 617, add enough to get to 625 
+    jmp pin valid_stop
+        jmp idle
+    valid_stop:
+        push
+.wrap
+
+
+; *************************
+; IrDA receive (115200 baud)
+; 
+; this is intended to run at 100 * 115200, 11.52 MHz
+; each bit takes 100 cycles
+; 1.6 us (min pulse width) is 18.75 cycles
+; 
+; *************************
+.program irda_uart_rx_115200
+
+.lang_opt python autopush = False
+.lang_opt python in_shiftdir = rp2.PIO.SHIFT_LEFT
+.lang_opt python fifo_join = rp2.PIO.JOIN_RX
+
+.wrap_target
+idle:
+    wait 0 pin 0                [11]        ; delay 1 us, slightly less than min pulse width
+    jmp pin idle                            ; if it's high again, the pulse was less than the minimum. ignore it.
+    nop                         [8]         ; otherwise it's the start bit. Delay a bit only this time so we're reading the pin in the middle of the 
+                                            ; pulse in the future
+    set y 7                                 ; counter for the data bits, use it as part of the extra delay
+    ; One bit should take up 100 cycles, which is too big to store directly in a register
+    ; Instead, we'll loop around some nops that add up to 100
+    data_bits:      
+        set x 9                             ; 15th cycle from the beginning
+        spin:                           
+            jmp x-- spin        [7]         ; 10 loops * 8 cycles per loop = 80 more cycles
+        nop                     [4]         ; bam the loop got us to 95 now we're at 100    
+        in pins 1               [12]        ; start of next bit
+        jmp y-- data_bits               ; wait enough cycles to make up for time spent before the loop, not including the extra delay
+    ; stop bit
+    set x 9                             ; 15th cycle from the beginning
+        spin2:                           
+            jmp x-- spin2        [7]         ; 10 loops * 8 cycles per loop = 80 more cycles
+        nop                      [4]         ; bam the loop got us to 95 now we're at 100    
+        jmp pin valid_stop
+            jmp idle
+        valid_stop:
+            push
+.wrap

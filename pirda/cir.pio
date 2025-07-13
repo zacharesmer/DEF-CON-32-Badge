@@ -1,0 +1,60 @@
+; Consumer IR uses a carrier wave of somewhere between 30kHz to 40kHz. 
+; I'm assuming 38kHz because that's what the flipper uses and it works pretty well
+; To transmit: just turn on PWM and bit bang it. precision schmrecision.
+;
+; To receive: This is trickier, because usually the carrier wave would be demodulated in hardware. 
+; I get to do it in software >:)
+;
+; Sample multiple times spanning a little more than one period of the carrier wave, then compare the samples. 
+; If any of the samples were high, consider the signal high.
+; If I knew the duty cycle I could make stronger guarantees, but it can vary. 
+; If all samples are low, the burst has ended. Raise an interrupt on rising and falling edges.
+;
+;  ~38kHz/26.3 uS period
+;      |---------| 
+;  ##___####_____####____####_______________________________
+;  |||||||||||||||||||||||||||||||||||||||||||||||||||||||| <- samples
+;          ---------    <------------------+
+;          100000111                       | 
+;                   ---------   <----------+----- sample windows (if any IR was seen, consider the signal on)
+;                   100001111              |
+;                            ---------  <--+
+;                            000000000
+;                                     ^ falling edge interrupt happens here
+;
+;
+
+; the osr (output shift) register is used as extra scratch space for sampling the pin
+
+; Run it at 19 MHz, so it gets 8 samples per period at ~38KHz.
+
+.program cir_rx
+.define SAMPLES 8
+
+.lang_opt python out_shiftdir=rp2.PIO.SHIFT_RIGHT
+
+.wrap_target
+wait 0 pin 0                [31]    ; wait for a signal (0 means we saw some IR)
+nop                         [31]    ; delay because the falling edge will always be detected at minimum 1 window width late
+irq set 0 rel                       ; raise irq for rising edge
+still_on:
+    set x SAMPLES                   ; this will be our counter
+    set y 0                         ; reset whether we've seen a pulse
+    sample:                         ; delay so each sample takes 64 cycles, this way the extra delay when restarting is not significant
+        mov osr ~ pins      [30]    ; sample the pin(s) and store in osr. Invert because low = we saw IR
+        jmp !y update       [30]    ; if y is still 0 (unchanged), update it
+            jmp x-- sample          ; if y has already been changed to 1, just go to the next sample without updating it
+                jmp sampling_done
+        update:
+            out y 1                 ; if y hasn't changed yet, set it to the value we just sampled (could be 1 or stay unchanged)
+            jmp x-- sample 
+    sampling_done:
+        jmp !y falling_edge         ; if y is 0, we saw no IR signals for the last sample window. Handle the falling edge.
+            jmp still_on            ; if y is 1 we saw some IR so the burst is ongoing, sample again
+        falling_edge:
+            irq set 0 rel           ; the burst has ended. Raise irq for falling edge, start over, and wait for the next signal
+            ;nop
+    .wrap
+
+
+
