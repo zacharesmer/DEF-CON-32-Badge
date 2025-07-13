@@ -1,6 +1,7 @@
 import time
 import board_config as bc
 import asyncio
+from machine import Pin
 
 
 class TextEntry:
@@ -20,14 +21,26 @@ class TextEntry:
         self.rows = [row0, row1, row2, row3]
         pass
 
-    async def run(self):
-        pass
+    def setup_buttons(self):
+        self.badge.b_button.irq(self.go_back, Pin.IRQ_FALLING)
+
+    def un_setup_buttons(self):
+        self.badge.b_button.irq(None)
+
+    def go_back(self, arg):
+        # print("b")
+        self.is_running = False
+
+    # async def run(self):
+    #     pass
 
     async def get_text(self, max_length):
+        self.setup_buttons()
         self.show_keyboard()
         self.is_running = True
         last_letter_at = time.ticks_ms()
         while self.is_running:
+            # print(f"running: {self.is_running}")
             t = self.badge.touch.get_one_touch_in_pixels()
             if t is not None:
                 if time.ticks_diff(time.ticks_ms(), last_letter_at) > 500:
@@ -38,16 +51,19 @@ class TextEntry:
                     elif letter == "<":
                         self.text_entered = self.text_entered[:-1]
                     elif letter == "OK":
-                        return self.text_entered
+                        if len(self.text_entered) > 0:
+                            return self.text_entered
                     else:
                         if len(self.text_entered) < max_length:
                             self.text_entered = f"{self.text_entered}{letter}"
                     last_letter_at = time.ticks_ms()
                     self.show_keyboard()
             await asyncio.sleep(0)
+        self.exit()
 
     async def exit(self):
         self.is_running = False
+        self.un_setup_buttons()
         pass
 
     def show_keyboard(self):

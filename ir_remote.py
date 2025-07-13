@@ -94,6 +94,8 @@ class Program(MenuProgram):
         elif self.mode == "Directory":
             if os.getcwd() != self.root_dir:
                 os.chdir("..")
+        elif self.mode == "Recording":
+            self.badge.cir.cancel = True
         self.show(refresh=True)
 
     # refresh controls whether the view will be reset and the first item will be selected. If refresh is false, the menu is just getting redrawn
@@ -131,7 +133,8 @@ class Program(MenuProgram):
     async def make_new_dir(self):
         self.un_setup_buttons()
         name = await TextEntry(self.badge).get_text(10)
-        os.mkdir(name)
+        if name is not None:
+            os.mkdir(name)
         self.setup_buttons()
         self.show(refresh=True)
         print(name)
@@ -139,7 +142,8 @@ class Program(MenuProgram):
     async def make_new_file(self):
         self.un_setup_buttons()
         name = await TextEntry(self.badge).get_text(10)
-        self.make_empty_ir_file(f"{name}.ir")
+        if name is not None:
+            self.make_empty_ir_file(f"{name}.ir")
         self.setup_buttons()
         self.show(refresh=True)
 
@@ -156,19 +160,25 @@ class Program(MenuProgram):
     async def record_new_code(self):
         self.badge.screen.fill(bg_color)
         self.badge.screen.frame_buf.text("Wating for a signal!", 10, 10, fg_color)
+        self.mode = "Recording"
         code = await self.badge.cir.receive_one_signal()
-        name = await TextEntry(self.badge).get_text(16)
-        to_write = [
-            "#",
-            f"name: {name}",
-            "type: raw",
-            "frequency: 38000",
-            "duty_cycle: 0.330000",
-            f"data: {" ".join([str(t) for t in code])}",
-        ]
-        with open(self.open_filename, "a") as f:
-            f.write("\n".join(to_write))
-            f.write("\n")
+        self.mode = "File"
+        if code is not None:
+            self.un_setup_buttons()
+            name = await TextEntry(self.badge).get_text(16)
+            if name is not None:
+                to_write = [
+                    "#",
+                    f"name: {name}",
+                    "type: raw",
+                    "frequency: 38000",
+                    "duty_cycle: 0.330000",
+                    f"data: {" ".join([str(t) for t in code])}",
+                ]
+                with open(self.open_filename, "a") as f:
+                    f.write("\n".join(to_write))
+                    f.write("\n")
+            self.setup_buttons()
         self.show(refresh=True)
 
 
