@@ -14,17 +14,18 @@ class ColorSelector:
         self.h_start_height = 20
         self.s_start_height = 90
         self.v_start_height = 160
-        self.gradient_left_start = 55
+        self.gradient_left_start = 20
         self.gradient_width = 200
         self.gradient_height = 50
         self.focused_gradient = 0
         self.step = 1 / self.gradient_width
+        self.selection_made = False
 
     def setup_buttons(self):
         self.badge.b_button.irq(self.go_back, Pin.IRQ_FALLING)
         self.badge.up_button.irq(self.go_up, Pin.IRQ_FALLING)
         self.badge.down_button.irq(self.go_down, Pin.IRQ_FALLING)
-        # self.badge.a_button.irq(self.select, Pin.IRQ_FALLING)
+        self.badge.a_button.irq(self.select, Pin.IRQ_FALLING)
         self.badge.left_button.irq(self.go_left, Pin.IRQ_FALLING)
         self.badge.right_button.irq(self.go_right, Pin.IRQ_FALLING)
 
@@ -80,6 +81,9 @@ class ColorSelector:
         # print("b")
         self.is_running = False
 
+    def select(self, arg):
+        self.selection_made = True
+
     async def get_color(self):
         self.setup_buttons()
         self.badge.screen.fill(bg_color)
@@ -89,6 +93,8 @@ class ColorSelector:
             t = self.badge.touch.get_one_touch_in_pixels()
             if t is not None:
                 self.set_color_from_touch(t)
+            if self.selection_made:
+                return lib.hsv_to_rgb(self.h, self.s, self.v)
 
     def show(self, h=True, s=True, v=True):
         # draw outlines and a little indicator of the current selections
@@ -185,6 +191,28 @@ class ColorSelector:
                 self.badge.screen.frame_buf.vline(x, y, self.gradient_height, color)
                 val_rgb = min(val_rgb + val_step, 255)
 
+        self.badge.screen.frame_buf.rect(
+            self.gradient_left_start + self.gradient_width + 20,
+            self.h_start_height,
+            50,
+            self.gradient_height,
+            lib.color565(*lib.hsv_to_rgb(self.h, self.s, self.v)),
+            True,
+        )
+
+        self.badge.screen.frame_buf.text(
+            "Press A",
+            self.gradient_left_start + self.gradient_width + 10,
+            self.s_start_height,
+            fg_color,
+        )
+        self.badge.screen.frame_buf.text(
+            "to select",
+            self.gradient_left_start + self.gradient_width + 10,
+            self.s_start_height + 15,
+            fg_color,
+        )
+
         self.badge.neopixels.fill(lib.hsv_to_rgb(self.h, self.s, self.v))
 
     def set_color_from_touch(self, t):
@@ -215,5 +243,6 @@ class ColorSelector:
         pass
 
 
+fg_color = 0xFF_FF
 accent_color = 0xFF_FF
 bg_color = 0x0

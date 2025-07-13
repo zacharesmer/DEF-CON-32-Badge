@@ -32,7 +32,12 @@ badg = badge.DC32_Badge()
 
 p = color_selector.ColorSelector(badg)
 
-asyncio.run(p.get_color())
+
+async def run():
+    print(await p.get_color())
+
+
+asyncio.run(run())
 # recordings = []
 # with open("test.ir", "r") as f:
 #     recordings = p.read_ir_file(f)
