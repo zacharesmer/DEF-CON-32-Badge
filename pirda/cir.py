@@ -80,13 +80,16 @@ class CIR:
     async def receive_one_signal(self, timeout_us=150_000):
         self.cancel = False
         self.started_receiving = False
+        self.start_receiving()
         while not self.cancel:
             if (
                 self.started_receiving
-                and time.ticks_diff(time.ticks_us, self.last) > timeout_us
+                and time.ticks_diff(time.ticks_us(), self.last) > timeout_us
             ):
                 break
-            await asyncio.sleep()
+            await asyncio.sleep(0)
+        self.stop_receiving()
+        return self.get_rx_timings()
 
     def signal_edge_handler(self, arg):
         self.started_receiving = True
