@@ -49,7 +49,7 @@ class MainMenu(MenuProgram):
                 json.dump(
                     {
                         "programs": [
-                            "your_module_here",
+                            # "your_module_here",
                         ]
                     },
                     f,
@@ -81,9 +81,10 @@ class MainMenu(MenuProgram):
         gc.collect()
         await self.close()
         ## danger danger
-        # TODO: I couldn't figure out how to store the programs in a folder and
-        # still launch them. If you can figure that out please send a PR
-        # because the root directory is really cluttered with random garbage
+        # TODO: It would be good to store the programs in a folder.
+        # maybe I can chdir into it? Other attempts did not work.
+        # If you have an idea please send a PR because the root
+        # directory is really cluttered with random garbage
         # and I wish it wasn't
         modname = self.options[self.current_selection].name
         module = __import__(modname)
