@@ -12,13 +12,11 @@ import calibrate
 
 class MainMenu(MenuProgram):
     def __init__(self, badge):
-        self.badge = badge
-        self.current_selection = 0
+        super().__init__(badge)
         self.current_program = None
         self.current_program_handle = None
         self.options = self.load_programs()
         self.title = "Home"
-        super().__init__(badge)
 
     def load_programs(self):
         # built in programs go here

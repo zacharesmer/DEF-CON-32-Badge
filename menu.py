@@ -20,6 +20,7 @@ class MenuProgram:
         self.view_start = 0
         self.view_elements = self.column_elements * self.num_columns
         self.max_text_length = 16
+        self.title = "Title"
 
     def setup_buttons(self):
         self.badge.up_button.irq(self.go_up, Pin.IRQ_FALLING)
@@ -110,7 +111,7 @@ class MenuProgram:
         print(f"Selected {self.current_selection}")
 
     def go_back(self, arg):
-        self.view_start = 0
+        self.is_running = False
         print("back")
 
     def show(self):
@@ -147,6 +148,7 @@ class MenuProgram:
     async def run(self):
         self.setup_buttons()
         self.is_running = True
+        self.show()
         while self.is_running:
             await asyncio.sleep(0)
         await self.exit()

@@ -95,3 +95,4 @@ The file should have a .py extension and be a valid Python module name: all lowe
 [] Make it possible to delete and rename recordings/files/directories from the IR remote app
 [] Something to use the speaker, maybe a piano app? 
 [] Add a way to display text in other sizes and fonts (this is a solved problem in the russ hughes st7789 driver and micropython nano gui, but I haven't investigated how they did it yet. Nano gui is probably most similar because it uses framebufs)
+[] literally any decently usable tools for layouts and UI

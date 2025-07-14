@@ -7,7 +7,8 @@ class Program:
     """
     Example program
 
-    There's an argument to be made that programs should inherit from this
+    There's a strong argument to be made that all programs should inherit from something like this, 
+    so if you want to do that, go for it.
     """
 
     def __init__(self, badge):

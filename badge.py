@@ -18,7 +18,7 @@ import json
 from other_hw.buzzer import Buzzer
 import os
 import asyncio
-from themes import Theme, engage, access
+from themes import Theme, builtin_themes
 
 
 class DC32_Badge:
@@ -30,7 +30,7 @@ class DC32_Badge:
         prefs = self.read_preferences()
         theme_dict = prefs.get("theme")
         if theme_dict is None:
-            theme = access
+            theme = builtin_themes["engage"]
         else:
             theme = Theme(theme_dict)
         self.theme = theme

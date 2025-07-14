@@ -24,7 +24,7 @@ class Program:
                 0,
                 0,
                 self.badge.theme.fg1,
-                self.badge.theme.bg1,
+                self.badge.theme.bg2,
                 box_width=320,
                 box_height=240,
                 fill=True,
