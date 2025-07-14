@@ -5,18 +5,6 @@ All written in Micropython, so no need to compile extra C modules unless you rea
 
 If you have an extra PSRAM chip soldered on, there's also uf2 to actually take advantage of it (as much as micro python can, anyway). If you don't have that and you're interested, get yourself a APS6404L-3SQR-SN and stick it in the blank spot next to the D-Pad.
 
-# Thank you
-Thanks to Entropic Engineering for making a very cool and fun piece of hardware. Additional credit for various helpful things, examples, tutorials, and prior art:
-
-- https://github.com/russhughes/st7789py_mpy
-- https://github.com/russhughes/st7789_mpy
-- https://github.com/peterhinch/micropython-nano-gui
-- https://github.com/Phaeilo/dc32_badge_micropython
-- https://github.com/p0ns/micropython-dc32
-- https://dmitry.gr/?r=06.%20Thoughts&proj=09.ComplexPioMachines
-- https://github.com/Wind-stormger/micropython-uasycio-buzzer
-- Dmitry Grinberg's original badge firmware, which is in Discord somewhere
-
 # Installing
 If you have the extra PSRAM soldered on, you can use the "-with-PSRAM" uf2 files instead. 
 
@@ -96,3 +84,15 @@ The file should have a .py extension and be a valid Python module name: all lowe
 [] Something to use the speaker, maybe a piano app? 
 [] Add a way to display text in other sizes and fonts (this is a solved problem in the russ hughes st7789 driver and micropython nano gui, but I haven't investigated how they did it yet. Nano gui is probably most similar because it uses framebufs)
 [] literally any decently usable tools for layouts and UI
+
+# Thank you
+Thanks to Entropic Engineering for making a very cool and fun piece of hardware. Additional credit for various helpful things, examples, tutorials, and prior art:
+
+- https://github.com/russhughes/st7789py_mpy
+- https://github.com/russhughes/st7789_mpy
+- https://github.com/peterhinch/micropython-nano-gui
+- https://github.com/Phaeilo/dc32_badge_micropython
+- https://github.com/p0ns/micropython-dc32
+- https://dmitry.gr/?r=06.%20Thoughts&proj=09.ComplexPioMachines
+- https://github.com/Wind-stormger/micropython-uasycio-buzzer
+- Dmitry Grinberg's original badge firmware, which is in Discord somewhere
