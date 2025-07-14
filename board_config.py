@@ -1,3 +1,7 @@
+"""
+Adapted from the board definition in pico SDK: https://github.com/raspberrypi/pico-sdk/blob/master/src/boards/include/boards/defcon32_badge.h
+"""
+
 DISPLAY_DC_PIN = 5  # data/command
 DISPLAY_DO_PIN = 6  # data out toward screen/MOSI
 DISPLAY_SCK_PIN = 8  # clock
@@ -13,8 +17,7 @@ SCREEN_WIDTH = 320
 I2C_SDA = 2
 I2C_SCL = 3
 
-
-IRDA_TX_PIN = 26
+IRDA_TX_PIN = 26  # different from the pico sdk definition
 IRDA_RX_PIN = 27
 
 
@@ -41,10 +44,10 @@ NEOPIXEL_NUM_LEDS = 9
 SPEAKER_OUT = 25
 
 # SD card
-SPI_DO = 12 # MISO
+SPI_DO = 12  # MISO
 SD_CS = 13
 SPI_CK = 14
-SPI_DI = 15 # MOSI
+SPI_DI = 15  # MOSI
 
 
 SAO_USER1 = 28

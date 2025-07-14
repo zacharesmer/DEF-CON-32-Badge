@@ -89,6 +89,8 @@ class CIR:
                 break
             await asyncio.sleep(0)
         self.stop_receiving()
+        if self.cancel:
+            return None
         return self.get_rx_timings()
 
     def signal_edge_handler(self, arg):

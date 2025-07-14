@@ -26,20 +26,23 @@ import board_config as bc
 import time
 import color_selector
 import asyncio
-
+from lib import Color
 
 badg = badge.DC32_Badge()
 
 p = color_selector.ColorSelector(badg)
 
 
+initial_color = Color(0, 20, 50, "rgb")
+
+
 async def run():
-    print(await p.get_color())
+    print(await p.get_color(initial_color))
 
 
 asyncio.run(run())
-# recordings = []
-# with open("test.ir", "r") as f:
-#     recordings = p.read_ir_file(f)
+# # recordings = []
+# # with open("test.ir", "r") as f:
+# #     recordings = p.read_ir_file(f)
 while True:
     pass

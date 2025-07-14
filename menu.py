@@ -6,8 +6,8 @@ Unfortunately not holding down the buttons yet but I should really add it
 """
 
 from machine import Pin
-from screen.st7789v_definitions import WHITE, BLACK
 import asyncio
+import time
 
 
 class MenuProgram:
@@ -43,11 +43,24 @@ class MenuProgram:
         handle up button press
         note to me so I don't mess this up a third time: the button is up, but the number goes *down*
         """
-        self.current_selection = (self.current_selection - 1) % len(self.options)
-        if self.current_selection < self.view_start:
-            self.view_start = self.current_selection - self.column_elements + 1
-        print(self.current_selection)
-        self.show()
+        first = True
+        last_press = time.ticks_ms()
+        while arg.value() == 0:
+            if first or time.ticks_diff(time.ticks_ms(), last_press) > 200:
+                first = False
+                last_press = time.ticks_ms()
+                self.current_selection = (self.current_selection - 1) % len(
+                    self.options
+                )
+                if self.current_selection < self.view_start:
+                    self.view_start = self.current_selection - self.column_elements + 1
+                # this means it's wrapped around to the end
+                if self.current_selection > self.view_start + self.view_elements:
+                    self.view_start = len(self.options) - (
+                        self.current_selection % self.view_elements
+                    )
+                # print(self.current_selection)
+                self.show()
 
     def go_down(self, arg):
         """
@@ -55,11 +68,22 @@ class MenuProgram:
         note to me so I don't mess this up a third time: the button is down, but the number goes *up*
         """
         # print("down")
-        self.current_selection = (self.current_selection + 1) % len(self.options)
-        if self.current_selection >= self.view_start + self.view_elements:
-            self.view_start = self.current_selection
-        print(self.current_selection)
-        self.show()
+        first = True
+        last_press = time.ticks_ms()
+        while arg.value() == 0:
+            if first or time.ticks_diff(time.ticks_ms(), last_press) > 200:
+                first = False
+                last_press = time.ticks_ms()
+                self.current_selection = (self.current_selection + 1) % len(
+                    self.options
+                )
+                if self.current_selection >= self.view_start + self.view_elements:
+                    self.view_start = self.current_selection
+                # this means it's wrapped around to the beginning
+                if self.current_selection < self.view_start:
+                    self.view_start = 0
+                # print(self.current_selection)
+                self.show()
 
     def go_left(self, arg):
         # print("left")
@@ -69,7 +93,7 @@ class MenuProgram:
             if new_idx < self.view_start:
                 self.view_start -= self.view_elements
             self.current_selection = new_idx
-        print(self.current_selection)
+        # print(self.current_selection)
         self.show()
 
     def go_right(self, arg):
@@ -91,17 +115,29 @@ class MenuProgram:
 
     def show(self):
         left_margin = 10
-        self.badge.screen.frame_buf.fill(BLACK)
-        self.badge.screen.frame_buf.text(self.title, left_margin, 10, WHITE)
+        self.badge.screen.frame_buf.fill(self.badge.theme.bg1)
+        max_title_length = 32
+        if len(self.title) > max_title_length:
+            display_title = f"...{self.title[len(self.title) - max_title_length:]}"
+        else:
+            display_title = self.title
+        self.badge.screen.frame_buf.text(
+            display_title, left_margin, 10, self.badge.theme.fg4
+        )
         # print the options
         height = 30
         for i, opt in enumerate(
             self.options[self.view_start : self.view_start + self.view_elements]
         ):
             if i + self.view_start == self.current_selection:
-                self.badge.screen.frame_buf.text(">", left_margin - 8, height, WHITE)
+                self.badge.screen.frame_buf.text(
+                    ">", left_margin - 8, height, self.badge.theme.accent
+                )
             self.badge.screen.frame_buf.text(
-                opt[0][: self.max_text_length], left_margin, height, WHITE
+                opt.name[: self.max_text_length],
+                left_margin,
+                height,
+                opt.color if opt.color is not None else self.badge.theme.fg1,
             )
             height += 15
             if height > 240 - 15:
@@ -117,3 +153,17 @@ class MenuProgram:
 
     async def exit(self):
         self.un_setup_buttons()
+
+
+class MenuOption:
+    """
+    hold a display name, color, and any other properties that may be of use
+    """
+
+    def __init__(self, display_name, **kwargs):
+        self.name = display_name
+        # print(kwargs)
+        # need this to be None if not explicitly set
+        self.color = None
+        for k, v in kwargs.items():
+            setattr(self, k, v)

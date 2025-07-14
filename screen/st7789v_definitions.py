@@ -1,3 +1,38 @@
+"""
+Primarily from github.com/russhughes/st7789py_mpy with a few things added from the ST7789 data sheet.
+
+MIT License
+
+Copyright 2025 Zach Resmer (have we reached pure simulacrum?)
+
+Copyright (c) 2020-2023 Russ Hughes
+
+Copyright (c) 2019 Ivan Belokobylskiy
+
+
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+The driver is based on devbis' st7789py_mpy module from
+https://github.com/devbis/st7789py_mpy.
+"""
+
 # ST7789 commands
 _ST7789_SWRESET = b"\x01"
 _ST7789_SLPIN = b"\x10"
@@ -71,7 +106,7 @@ _ST7789_INIT_CMDS = (
     #####
     # TODO: consider factoring the rotation/window size stuff out so it is configurable
     # Possible rotations: b"\x00", b"\x60", b"\xc0", b"\x"a0"
-    # This is also where RGB or BGR are set (| the value with 0x08)
+    # This is also where RGB or BGR are set (| the value with 0x08 for BGR)
     (_ST7789_MADCTL, b"\x60", 0),
     # set window to be full size, 320 px wide, 240 px tall
     # x end = 319 = 0000_0001_0011_1111 = 0x013F

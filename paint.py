@@ -30,8 +30,16 @@ class Program:
         self.touch = badge.touch
         self.history = PaintHistory()
 
-        self.color = random_fg_color()
-        self.bg_color = random_bg_color()
+        self.color, self.bg_color = self.random_colors()
+
+    def random_colors(self):
+        fgh = random.random()
+        bgh = random.random()
+        # make sure there's decent contrast
+        bgv = 1
+        if abs(fgh - bgh) < 0.3:
+            bgv = 0.5
+        return lib.Color(fgh, 1, 1, "paint"), lib.Color(bgh, 1, bgv, "paint")
 
     def setup_buttons(self):
         self.badge.start_button.irq(self.clear_screen, trigger=Pin.IRQ_FALLING)
@@ -41,12 +49,11 @@ class Program:
         self.badge.left_button.irq(self.receive_drawing, trigger=Pin.IRQ_FALLING)
 
     def clear_screen(self, *args):
-        self.color = random_fg_color()
-        self.bg_color = random_bg_color()
+        self.color, self.bg_color = self.random_colors()
         # TODO make some fun effects for coloring in the new background color (random lines, dots, etc.)
         self.tft.fill(self.bg_color.c565)
-        self.badge.set_back(self.bg_color.LED)
-        self.badge.set_front(self.color.LED)
+        self.badge.set_back(self.bg_color)
+        self.badge.set_front(self.color)
         self.history.clear()
 
     def go_back(self, *args):
@@ -126,7 +133,7 @@ class Program:
 
         print("sent")
         print(f"took {(time.time_ns() - send_start)/10**6} ms")
-        self.badge.set_eyes(self.color.LED)
+        self.badge.set_eyes(self.color)
         # print("why so slow??")
 
     def receive_drawing(self, *args):
@@ -144,7 +151,7 @@ class Program:
 
         if size is None or size == 0xFF_FF_FF_FF:
             print("No size :(")
-            self.badge.set_front(self.color.LED)
+            self.badge.set_front(self.color)
             return
         print(f"{size:032b}")
         while other_color is None and args[0].value() == 0:
@@ -156,7 +163,7 @@ class Program:
 
         if other_color is None:
             print("No color :(")
-            self.badge.set_front(self.color.LED)
+            self.badge.set_front(self.color)
             return
         while args[0].value() == 0 and rxed < size:
             self.badge.set_eyes(anim.next())
@@ -173,7 +180,7 @@ class Program:
             rxed += 1
             # print(f"{history.x()}, {history.y()}")
             self.tft.fill_circle(self.history.x(), self.history.y(), 3, other_color)
-        self.badge.set_front(self.color.LED)
+        self.badge.set_front(self.color)
 
     async def run(self):
         self.setup_buttons()
@@ -216,21 +223,11 @@ class Program:
         del self.history
 
 
-class Color:
-    def __init__(self, h, s, v):
-        # make the LEDs dimmer than the screen and boost their saturation
-        self.LED = lib.hsv_to_rgb(h, max(s, 0.8), min(v, 0.5))
-        self.c565 = lib.color565(*lib.hsv_to_rgb(h, s, v))
-
-
-def random_fg_color():
-    # TODO make this prettier
-    return Color(random.random(), 1, 1)
-
-
-def random_bg_color():
-    # TODO make this prettier
-    return Color(random.random(), 1, 1)
+# class Color:
+#     def __init__(self, h, s, v):
+#         # make the LEDs dimmer than the screen and boost their saturation
+#         self.LED = lib.hsv_to_rgb(h, max(s, 0.8), min(v, 0.5))
+#         self.c565 = lib.color565(*lib.hsv_to_rgb(h, s, v))
 
 
 class PaintHistory:

@@ -1,4 +1,10 @@
-# hold RGB565 pixels in a framebuf and use DMA to push them out over SPI to the TFT LCD XYZ LMNOPQRSTUV
+"""
+Screen driver to hold RGB565 pixels in a framebuf and use DMA to push them out over SPI to the TFT LCD XYZ LMNOPQRSTUV
+
+Heavily based on github.com/russhughes/st7789py_mpy but also pretty much entirely rewritten
+
+"""
+
 import framebuf
 import board_config as bc
 from screen.pio_spi import PIO_SPI
@@ -9,7 +15,8 @@ import screen.st7789v_definitions as defs
 import uctypes
 import struct
 import array
-from lib import color565
+from lib import color565, shitty_wrap_text
+from math import floor
 
 
 class ST7789V:
@@ -56,9 +63,10 @@ class ST7789V:
         # so named because I thought I also needed dma2 to reset the count, but apparently that's not true
         self.dma3 = rp2.DMA()
 
-        mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] = (
-            self.dma1.channel
-            | self.dma3.channel  # aborting all DMA channels seems to help restart DMA without a full power cycle? idk actually
+        # aborting all DMA channels may help restart DMA without a full power cycle?
+        # TODO: this doesn't seem to be working
+        mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] = (0x1 << self.dma1.channel) | (
+            0x1 << self.dma3.channel
         )
         while mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] != 0:
             continue
@@ -172,6 +180,44 @@ class ST7789V:
 
     def pixel(self, x, y, color):
         self.frame_buf.pixel(x, y, color)
+
+    def text_in_box(
+        self,
+        text,
+        x,
+        y,
+        text_color,
+        box_color,
+        text_width=None,
+        box_width=None,
+        box_height=None,
+        fill=False,
+        line_height=15,
+    ):
+        """
+        If text_width is provided, (shittily) wrap the text
+        Center the text in the box, or if it's too long just start at the top and overflow out the bottom
+        """
+        if text_width is None:
+            if box_width is None:
+                text_width = len(text * 8)
+            else:
+                text_width = min(box_width, len(text) * 8)
+
+        wrapped = shitty_wrap_text(text, floor(text_width / 8))
+
+        total_text_height = line_height * len(wrapped) - (line_height - 8)
+        box_height = total_text_height + 2 if box_height is None else box_height
+        box_width = text_width + 2 if box_width is None else box_width
+        self.frame_buf.rect(x, y, box_width, box_height, box_color, fill)
+        text_x = x + (box_width - text_width) // 2
+        if total_text_height < box_height:
+            text_y = y + (box_height - total_text_height) // 2
+        else:
+            text_y = y + 1
+        for line in wrapped:
+            self.frame_buf.text(line, text_x, text_y, text_color)
+            text_y += line_height
 
 
 def dma_regs_offset(which_dma):

@@ -1,4 +1,6 @@
-# # send data out to the TFT LCD using DMA and SPI and PIO and LMNOPQRSTUVWXY and Z
+"""
+The badge doesn't have the screen hooked up to a hardware SPI, so we've got to do it with PIO
+"""
 
 from machine import Pin
 import rp2

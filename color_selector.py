@@ -87,9 +87,12 @@ class ColorSelector:
     def select(self, arg):
         self.selection_made = True
 
-    async def get_color(self):
+    async def get_color(self, initial_color=None):
+        if initial_color is not None:
+            self.h, self.s, self.v = lib.rgb_to_hsv(*initial_color)
+        print(self.h, self.s, self.v)
         self.setup_buttons()
-        self.badge.screen.fill(bg_color)
+        self.badge.screen.fill(self.badge.theme.bg1)
         self.show()
         self.is_running = True
         while self.is_running:
@@ -106,9 +109,9 @@ class ColorSelector:
             (self.h_start_height, self.s_start_height, self.v_start_height)
         ):
             if i == self.focused_gradient:
-                color = accent_color
+                color = self.badge.theme.fg1
             else:
-                color = bg_color
+                color = self.badge.theme.bg1
             self.badge.screen.frame_buf.rect(
                 self.gradient_left_start - 1,
                 start_height - 1,
@@ -122,14 +125,14 @@ class ColorSelector:
             self.h_start_height + self.gradient_height + 1,
             self.gradient_width + 10,
             10,
-            bg_color,
+            self.badge.theme.bg1,
             True,
         )
         self.badge.screen.frame_buf.text(
             "^",
             self.gradient_left_start + round(self.h * self.gradient_width) - 4,
             self.h_start_height + self.gradient_height + 1,
-            accent_color,
+            self.badge.theme.fg1,
         )
         # s indicator
         self.badge.screen.frame_buf.rect(
@@ -137,14 +140,14 @@ class ColorSelector:
             self.s_start_height + self.gradient_height + 1,
             self.gradient_width + 10,
             10,
-            bg_color,
+            self.badge.theme.bg1,
             True,
         )
         self.badge.screen.frame_buf.text(
             "^",
             self.gradient_left_start + round(self.s * self.gradient_width) - 4,
             self.s_start_height + self.gradient_height + 1,
-            accent_color,
+            self.badge.theme.fg1,
         )
         # v indicator
         self.badge.screen.frame_buf.rect(
@@ -152,14 +155,14 @@ class ColorSelector:
             self.v_start_height + self.gradient_height + 1,
             self.gradient_width + 10,
             10,
-            bg_color,
+            self.badge.theme.bg1,
             True,
         )
         self.badge.screen.frame_buf.text(
             "^",
             self.gradient_left_start + round(self.v * self.gradient_width) - 4,
             self.v_start_height + self.gradient_height + 1,
-            accent_color,
+            self.badge.theme.fg1,
         )
 
         # draw H S V gradients
@@ -195,6 +198,7 @@ class ColorSelector:
                 self.badge.screen.frame_buf.vline(x, y, self.gradient_height, color)
                 val_rgb = min(val_rgb + val_step, 255)
 
+        # show a swatch
         self.badge.screen.frame_buf.rect(
             self.gradient_left_start + self.gradient_width + 20,
             self.h_start_height,
@@ -203,13 +207,13 @@ class ColorSelector:
             lib.color565(*lib.hsv_to_rgb(self.h, self.s, self.v)),
             True,
         )
-
+        # the actual OK button
         self.badge.screen.frame_buf.rect(
             self.ok_button_left,
             self.ok_button_top,
             self.ok_button_size,
             self.ok_button_size,
-            accent_color,
+            self.badge.theme.bg2,
             True,
         )
 
@@ -217,28 +221,15 @@ class ColorSelector:
             "OK",
             self.ok_button_left + self.ok_button_size // 2 - 8,
             self.ok_button_top + self.ok_button_size // 2 - 12,
-            fg_color,
+            self.badge.theme.fg1,
         )
 
         self.badge.screen.frame_buf.text(
             "(A)",
             self.ok_button_left + self.ok_button_size // 2 - 12,
             self.ok_button_top + self.ok_button_size // 2 + 4,
-            fg_color,
+            self.badge.theme.fg1,
         )
-
-        # self.badge.screen.frame_buf.text(
-        #     "Or A",
-        #     self.ok_button_left,
-        #     self.v_start_height,
-        #     fg_color,
-        # )
-        # self.badge.screen.frame_buf.text(
-        #     "to select",
-        #     self.ok_button_left,
-        #     self.v_start_height + 15,
-        #     fg_color,
-        # )
 
         self.badge.neopixels.fill(lib.hsv_to_rgb(self.h, self.s, self.v))
 
@@ -247,7 +238,8 @@ class ColorSelector:
         if x > self.ok_button_left and x < self.ok_button_left + self.ok_button_size:
             if y > self.ok_button_top and y < self.ok_button_top + self.ok_button_size:
                 self.selection_made = True
-        # be nice to the touch screen users and let them go off of either edge and select red
+                return
+        # be nice to the touch screen users and let them go off of either edge to select min and max
         if x < self.gradient_left_start:
             pos = 0
         elif x > self.gradient_left_start + self.gradient_width:
@@ -269,8 +261,3 @@ class ColorSelector:
             self.focused_gradient = 2
             self.show(h=False, s=False, v=False)
         pass
-
-
-fg_color = 0xFF_FF
-accent_color = 0xFF_00
-bg_color = 0x0

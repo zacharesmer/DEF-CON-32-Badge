@@ -4,7 +4,7 @@ from screen.st7789v_definitions import WHITE, BLACK
 import asyncio
 import gc
 import os
-from menu import MenuProgram
+from menu import MenuProgram, MenuOption
 import json
 import re
 import calibrate
@@ -17,23 +17,43 @@ class MainMenu(MenuProgram):
         self.current_program = None
         self.current_program_handle = None
         self.options = self.load_programs()
-        self.title = "Menu"
+        self.title = "Home"
         super().__init__(badge)
 
     def load_programs(self):
         # built in programs go here
-        progs = [("calibrate",), ("paint",), ("ir_remote",)]
+        progs = [
+            MenuOption("ir_remote"),
+            MenuOption("calibrate"),
+            MenuOption("paint"),
+            MenuOption("choose_theme"),
+        ]
         # and load any others registered in `external_programs.json`
         valid_identifier_exp = re.compile("^[A-Za-z_][A-Za-z0-9_]*$")
-        with open("external_programs.json") as f:
-            ext = json.load(f)
-            for p in ext["programs"]:
-                if valid_identifier_exp.match(p) is not None:
-                    progs.append((p,))
-                else:
-                    print(
-                        f"Invalid module name '{p}', see https://docs.python.org/3/reference/lexical_analysis.html#identifiers"
-                    )
+        try:
+            with open("programs.json", "r") as f:
+                ext = json.load(f)
+                if ext.get("programs") is not None:
+                    for p in ext["programs"]:
+                        if valid_identifier_exp.match(p) is not None:
+                            print(p)
+                            progs.append(MenuOption(p))
+                        else:
+                            print(
+                                f"Invalid module name '{p}', see https://docs.python.org/3/reference/lexical_analysis.html#identifiers"
+                            )
+        except OSError as e:
+            # if the file doesn't exist make a new one
+            print(e)
+            with open("programs.json", "w") as f:
+                json.dump(
+                    {
+                        "programs": [
+                            "your_module_here",
+                        ]
+                    },
+                    f,
+                )
         return progs
 
     def clean_up_program(self):
@@ -65,7 +85,7 @@ class MainMenu(MenuProgram):
         # still launch them. If you can figure that out please send a PR
         # because the root directory is really cluttered with random garbage
         # and I wish it wasn't
-        modname = self.options[self.current_selection][0]
+        modname = self.options[self.current_selection].name
         module = __import__(modname)
         self.current_program = module.Program(self.badge)
         print(f"Free: {gc.mem_free()}")

@@ -35,7 +35,7 @@ Select: Menu (to be implemented)
 # Adding other programs
 
 # WARNINGS
-This will execute arbitrary Micro Python code with no guardrails whatsoever. If you have a DEF CON badge you probably have some idea of how dangerous that could be, but if you are not sufficiently alarmed, look up the USB Rubber Ducky. Someone could make your badge **emulate a keyboard and mouse and generate arbitrary input to your computer**, so please be careful if you plan to plug this into your computer. It's no more or less safe than downloading some random uf2 and flashing your badge.
+This will execute arbitrary MicroPython code with no guardrails whatsoever. If you have a DEF CON badge you probably have some idea of how dangerous that could be. Someone could make your badge **emulate a keyboard and mouse and generate arbitrary input to your computer**, so please be careful if you plan to plug this into your computer. It's no more or less safe than downloading a different random uf2 and flashing your badge, but if I accidentally use the word "app" someone might get the idea there's any sandboxing whatsoever. You have been warned!
 
 Using the experimental SD card and USB MSC compile flags may cause **data corruption**. Please keep a backup of anything you care about on your SD card or in the flash memory! Yes it uses IR files compatible with the Flipper, but please don't put your Flipper SD card into this thing without a backup.
 

@@ -1,7 +1,7 @@
 # a program to be a TV remote! yay
 import asyncio
 import os
-from menu import MenuProgram
+from menu import MenuProgram, MenuOption
 from text_entry import TextEntry
 
 
@@ -49,11 +49,22 @@ class Program(MenuProgram):
             elif split_line[0] == "type:":
                 if split_line[1] == "parsed":
                     name = "Unimplemented"
-                    output.append((name, ()))
+                    output.append(
+                        MenuOption(
+                            name, color=self.badge.theme.fg1, ir_code=(), action=None
+                        )
+                    )
             elif split_line[0] == "data:":
                 # print(split_line[1:])
                 try:
-                    output.append((name, [int(i) for i in split_line[1:]], "Existing"))
+                    output.append(
+                        MenuOption(
+                            name,
+                            color=self.badge.theme.fg1,
+                            ir_code=[int(i) for i in split_line[1:]],
+                            action="Send",
+                        )
+                    )
                 except Exception as e:
                     print(e)
         return output
@@ -61,33 +72,32 @@ class Program(MenuProgram):
     # def append_ir_code(self, )
 
     def select(self, arg):
+        selection = self.options[self.current_selection]
         if self.mode == "Directory":
-            selection_name, selection_type = self.options[self.current_selection]
             # 0x4000 is directory, 0x8000 is a file
-            if selection_type == _OS_TYPE_DIR:
+            if selection.filetype == _OS_TYPE_DIR:
                 self.mode = "Directory"
-                os.chdir(selection_name)
+                os.chdir(selection.name)
                 self.show(refresh=True)
-            elif selection_type == _OS_TYPE_FILE:
-                self.open_filename = selection_name
+            elif selection.filetype == _OS_TYPE_FILE:
+                self.open_filename = selection.name
                 self.mode = "File"
                 self.show(refresh=True)
-            # TODO: handle "new file" and "new directory" options
-            elif selection_type == _TYPE_NEW_DIR:
+            elif selection.filetype == _TYPE_NEW_DIR:
                 asyncio.create_task(self.make_new_dir())
                 # open a text entry once that's a thing that exists
                 pass
-            elif selection_type == _TYPE_NEW_FILE:
+            elif selection.filetype == _TYPE_NEW_FILE:
                 asyncio.create_task(self.make_new_file())
                 pass
         elif self.mode == "File":
-            selection_name, _, type = self.options[self.current_selection]
-            if type == "Existing":
+            if selection.action == "Send":
                 self.send_selected_code()
-            elif type == "Record New":
+            elif selection.action == "Record":
                 asyncio.create_task(self.record_new_code())
-            # TODO: handle "record a code" option
-
+            elif selection.action == None:
+                print("no action")
+                pass
         # return super().select(*args)
 
     def go_back(self, arg):
@@ -121,15 +131,22 @@ class Program(MenuProgram):
         for f in os.ilistdir(os.getcwd()):
             # we store the file's name and type
             fname, ftype, *_ = f
-            # only only visible directories and .ir files
-            if (
-                fname.endswith(".ir")
-                or ftype == _OS_TYPE_DIR
-                and not fname.startswith(".")
-            ):
-                self.options.append((f[0], f[1]))
-        self.options.append(("New File", _TYPE_NEW_FILE))
-        self.options.append(("New Dir", _TYPE_NEW_DIR))
+            # only add directories and .ir files, and ignore hidden files
+            if fname.endswith(".ir") and not fname.startswith("."):
+                self.options.append(
+                    MenuOption(fname, color=self.badge.theme.fg1, filetype=ftype)
+                )
+            elif ftype == _OS_TYPE_DIR and not fname.startswith("."):
+                self.options.append(
+                    MenuOption(fname, color=self.badge.theme.fg2, filetype=ftype)
+                )
+
+        self.options.append(
+            MenuOption("New File", color=self.badge.theme.fg3, filetype=_TYPE_NEW_FILE)
+        )
+        self.options.append(
+            MenuOption("New Dir", color=self.badge.theme.fg3, filetype=_TYPE_NEW_DIR)
+        )
 
     def refresh_recordings_from_current_file(self):
         self.title = self.open_filename
@@ -137,8 +154,14 @@ class Program(MenuProgram):
             self.options = self.read_ir_file(f)
             # print(self.options)
         # TODO: add an "Add" option, maybe in a special color or something
-        self.options.append(("New Recording", None, "Record New"))
-        # TODO: override show to color types of files differently
+        self.options.append(
+            MenuOption(
+                "New Recording",
+                color=self.badge.theme.fg3,
+                ir_code=None,
+                action="Record",
+            )
+        )
         # self.show()
 
     async def make_new_dir(self):
@@ -165,12 +188,14 @@ class Program(MenuProgram):
 
     def send_selected_code(self):
         # todo: when I support more types of signal, I'll decode them here before sending
-        self.badge.cir.send_timings(self.options[self.current_selection][1])
+        self.badge.cir.send_timings(self.options[self.current_selection].ir_code)
 
     # capture a new code and save it to the currently open file
     async def record_new_code(self):
-        self.badge.screen.fill(bg_color)
-        self.badge.screen.frame_buf.text("Wating for a signal!", 10, 10, fg_color)
+        self.badge.screen.fill(self.badge.theme.bg1)
+        self.badge.screen.frame_buf.text(
+            "Wating for a signal!", 10, 10, self.badge.theme.fg1
+        )
         self.mode = "Recording"
         code = await self.badge.cir.receive_one_signal()
         self.mode = "File"
@@ -194,9 +219,6 @@ class Program(MenuProgram):
             self.setup_buttons()
         self.show(refresh=True)
 
-
-fg_color = 0x00_00
-bg_color = 0xFF_FF
 
 _OS_TYPE_FILE = 0x8000
 _OS_TYPE_DIR = 0x4000
