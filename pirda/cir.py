@@ -33,9 +33,9 @@ class CIR:
         # duty cycle of .33
         self.tx_on_duty = 21842
         # .5
-        self.tx_on_duty = 32768
-        # .66
-        self.tx_on_duty = 43684
+        # self.tx_on_duty = 32768
+        # # .66
+        # self.tx_on_duty = 43684
         self.tx_off_duty = 0
         # self.tx_on = True
         self.cancel = False

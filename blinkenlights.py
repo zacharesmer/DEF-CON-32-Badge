@@ -2,7 +2,7 @@ import asyncio
 from machine import Pin
 import board_config as bc
 from menu import MenuProgram, MenuOption
-from animation_lib import FadeThroughColors, RainbowParty
+from lib.animations import FadeThroughColors, RainbowParty
 
 
 class Program(MenuProgram):

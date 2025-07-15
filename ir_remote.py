@@ -2,8 +2,8 @@
 import asyncio
 import os
 from menu import MenuProgram, MenuOption
-from text_entry import TextEntry
-from lib import timings_from_nec
+from lib.text_entry import TextEntry
+from lib.common import timings_from_nec
 
 
 class Program(MenuProgram):
@@ -29,6 +29,7 @@ class Program(MenuProgram):
         pass
 
     async def run(self):
+        self.badge.setup_ir("cir")
         self.show(refresh=True)
         await super().run()
 
@@ -42,6 +43,8 @@ class Program(MenuProgram):
         line = f.readline()
         decode_nec = False
         decode_necext = False
+        # TODO: other formats go here
+        # decode_other_format = False
         address = None
         command = None
         while line != "":
@@ -56,6 +59,9 @@ class Program(MenuProgram):
                     decode_nec = True
                 elif split_line[1] == "NECext":
                     decode_necext = True
+                # TODO: more formats go here
+                # elif split_lin[1] == "OtherFormat:"
+                #   decode_other_format = True
                 else:
                     name = "Unimplemented"
                     output.append(
@@ -88,13 +94,19 @@ class Program(MenuProgram):
                         address = int("".join(split_line[1:3]), 16)
                     except Exception as e:
                         print(f"Error decoding NEC address: {e}")
+                # TODO: more formats go here
+                # elif decode_other_format:
+                #   get the address
             elif split_line[0] == "command:":
-                if decode_nec:
+                if decode_nec or decode_necext:
                     # command = [int(i, 16) for i in split_line[1:]]
                     try:
-                        command = int(split_line[1], 16)
-                        t = timings_from_nec(address, command)
-                        print(f"got timings from NEC: {t}")
+                        if decode_nec:
+                            command = int(split_line[1], 16)
+                        elif decode_necext:
+                            command = int("".join(split_line[1:3]), 16)
+                        t = timings_from_nec(address, command, ext=decode_necext)
+                        # print(f"got timings from NEC: {t}")
                         output.append(
                             MenuOption(
                                 name,
@@ -107,23 +119,10 @@ class Program(MenuProgram):
                         print(f"Error decoding NEC command or signal: {e}")
                     finally:
                         decode_nec = False
-                elif decode_necext:
-                    try:
-                        command = int("".join(split_line[1:3]), 16)
-                        t = timings_from_nec(address, command, ext=True)
-                        print(f"got timings from NEC: {t}")
-                        output.append(
-                            MenuOption(
-                                name,
-                                color=self.badge.theme.fg1,
-                                ir_code=t,
-                                action="Send",
-                            )
-                        )
-                    except Exception as e:
-                        print(f"Error decoding NECext: {e}")
-                    finally:
                         decode_necext = False
+                # TODO: more formats go here
+                # elif decode_other_format:
+                #   make a menu option with timings
 
         return output
 
@@ -186,6 +185,11 @@ class Program(MenuProgram):
         # add the names to a list of options, keep track of which one is selected
         # set the mode so the OK button callback reads and displays the file
         self.options = []
+        # if os.getcwd() != self.root_dir:
+        #     self.options.append(
+        #         MenuOption("..", color=self.badge.theme.fg2, filetype=_OS_TYPE_DIR)
+        #     )
+        #     self.current_selection = 1
         for f in os.ilistdir(os.getcwd()):
             # we store the file's name and type
             fname, ftype, *_ = f
@@ -286,3 +290,4 @@ _TYPE_NEW_FILE = 0x8001
 _TYPE_NEW_DIR = 0x4001
 _TYPE_DELETE_FILE = 0x8002
 _TYPE_DELETE_DIR = 0x4002
+_TYPE_PARENT_DIR = 0x4003

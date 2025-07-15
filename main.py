@@ -1,6 +1,6 @@
-# """
-# this will eventually become main.py but for now I need to not have anything in main.py so vscode doesn't shit itself when I restart the badge
-# """
+"""
+this will eventually become main.py but for now I need to not have anything in main.py so vscode doesn't shit itself when I restart the badge
+"""
 
 # from machine import Pin
 # import board_config as bc

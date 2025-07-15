@@ -1,6 +1,6 @@
 """ """
 
-import lib
+import lib.common as common
 from machine import Pin
 import time
 
@@ -89,7 +89,7 @@ class ColorSelector:
 
     async def get_color(self, initial_color=None):
         if initial_color is not None:
-            self.h, self.s, self.v = lib.rgb_to_hsv(*initial_color)
+            self.h, self.s, self.v = common.rgb_to_hsv(*initial_color)
         print(self.h, self.s, self.v)
         self.setup_buttons()
         self.badge.screen.fill(self.badge.theme.bg1)
@@ -100,7 +100,7 @@ class ColorSelector:
             if t is not None:
                 self.set_color_from_touch(t)
             if self.selection_made:
-                return lib.hsv_to_rgb(self.h, self.s, self.v)
+                return common.hsv_to_rgb(self.h, self.s, self.v)
         return None
 
     def show(self, h=True, s=True, v=True):
@@ -172,7 +172,7 @@ class ColorSelector:
             for x in range(
                 self.gradient_left_start, self.gradient_left_start + self.gradient_width
             ):
-                color = lib.color565(*lib.hsv_to_rgb(hue, 1, 1))
+                color = common.color565(*common.hsv_to_rgb(hue, 1, 1))
                 self.badge.screen.frame_buf.vline(x, y, self.gradient_height, color)
                 hue += self.step
         if s:
@@ -181,7 +181,7 @@ class ColorSelector:
             for x in range(
                 self.gradient_left_start, self.gradient_left_start + self.gradient_width
             ):
-                color = lib.color565(*lib.hsv_to_rgb(self.h, sat, 1))
+                color = common.color565(*common.hsv_to_rgb(self.h, sat, 1))
                 self.badge.screen.frame_buf.vline(x, y, self.gradient_height, color)
                 sat += self.step
         if v:
@@ -193,7 +193,7 @@ class ColorSelector:
                 self.gradient_left_start, self.gradient_left_start + self.gradient_width
             ):
                 # print(val_rgb)
-                color = lib.color565(val_rgb, val_rgb, val_rgb)
+                color = common.color565(val_rgb, val_rgb, val_rgb)
                 # print(f"{color:016b}")
                 self.badge.screen.frame_buf.vline(x, y, self.gradient_height, color)
                 val_rgb = min(val_rgb + val_step, 255)
@@ -204,7 +204,7 @@ class ColorSelector:
             self.h_start_height,
             self.ok_button_size,
             self.ok_button_size,
-            lib.color565(*lib.hsv_to_rgb(self.h, self.s, self.v)),
+            common.color565(*common.hsv_to_rgb(self.h, self.s, self.v)),
             True,
         )
         # the actual OK button
@@ -231,7 +231,7 @@ class ColorSelector:
             self.badge.theme.fg1,
         )
 
-        self.badge.neopixels.fill(lib.hsv_to_rgb(self.h, self.s, self.v))
+        self.badge.neopixels.fill(common.hsv_to_rgb(self.h, self.s, self.v))
 
     def set_color_from_touch(self, t):
         x, y = t

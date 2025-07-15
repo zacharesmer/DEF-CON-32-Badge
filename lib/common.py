@@ -148,47 +148,29 @@ def timings_from_nec(address, command, ext=False):
         bits = 16
     else:
         bits = 8
-    print(f"address: {address:08b}, command: {command:08b}")
+    # print(f"address: {address:08b}, command: {command:08b}")
     bit_high = 560
     one_low = 1_690
     zero_low = 560
     # preamble
     timings = [9000, 4500]
-    # the address is 32 bits but NEC uses 8 bits and sends the least significant first
+    # Send the least significant bit first
     mask = 0x1
-    inv_address = ~address
-    for _ in range(bits):
-        if address & mask > 0:
-            timings += [bit_high, one_low]
-        else:
-            timings += [bit_high, zero_low]
-        address >>= 1
-    for _ in range(bits):
-        if inv_address & mask > 0:
-            timings += [bit_high, one_low]
-        else:
-            timings += [bit_high, zero_low]
-        inv_address >>= 1
-    inv_command = ~command
-    for _ in range(bits):
-        if command & mask > 0:
-            timings += [bit_high, one_low]
-        else:
-            timings += [bit_high, zero_low]
-        command >>= 1
-    for _ in range(bits):
-        if inv_command & mask > 0:
-            timings += [bit_high, one_low]
-        else:
-            timings += [bit_high, zero_low]
-        inv_command >>= 1
+    data_bytes = (address, ~address, command, ~command)
+    for b in data_bytes:
+        for _ in range(bits):
+            if b & mask > 0:
+                timings += [bit_high, one_low]
+            else:
+                timings += [bit_high, zero_low]
+            b >>= 1
     # stop pulse
     timings.append(bit_high)
     return timings
 
 
 def timings_from_necext(address, command):
-    print(f"address: {address:08b}, command: {command:08b}")
+    # print(f"address: {address:08b}, command: {command:08b}")
     bit_high = 560
     one_low = 1_690
     zero_low = 560

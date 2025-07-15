@@ -26,7 +26,7 @@ import board_config as bc
 import time
 import color_selector
 import asyncio
-from lib import Color
+from lib.common import Color
 
 badg = badge.DC32_Badge()
 

@@ -6,7 +6,7 @@ import screen.board_config as board_config
 import random
 import time
 from screen.touch import Touchscreen
-import lib
+import lib.common as common
 
 tft = s.ST7789V(manual_draw=True)
 touch = Touchscreen()
@@ -48,7 +48,7 @@ def random_dots():
             board_config.SCREEN_WIDTH // 2 + r + 1, board_config.SCREEN_WIDTH - r - 2
         )
         y = random.randint(r + 1, board_config.SCREEN_HEIGHT - r - 2)
-        color = lib.color565(
+        color = common.color565(
             random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)
         )
         tft.frame_buf.ellipse(x, y, r, r, color, True)
@@ -64,9 +64,9 @@ def slide_down():
     y = r + 1
     y2 = r + 50
     y3 = r + 100
-    color1 = lib.color565(82, 21, 78)
-    color2 = lib.color565(71, 137, 44)
-    color3 = lib.color565(239, 48, 84)
+    color1 = common.color565(82, 21, 78)
+    color2 = common.color565(71, 137, 44)
+    color3 = common.color565(239, 48, 84)
     while True:
         tft.frame_buf.rect(8, board_config.SCREEN_HEIGHT - 24, 100, 14, defs.BLUE, True)
         # tft.frame_buf.text(

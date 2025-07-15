@@ -7,18 +7,18 @@ import time
 from machine import Pin, Timer
 import random
 from array import array
-import lib
-from animation_lib import BlinkRed
+import lib.common as common
+from lib.animations import BlinkRed
 from badge import DC32_Badge
 
 import asyncio
+import gc
 
 # import micropython
 # micropython.alloc_emergency_exception_buf(100)
 
-# TODO: this uses way too much memory. If I add color selectors on the sides to take up enough space
-# that the drawing area is only 240 * 255, I can take up half as much space storing the history,
-# which I think would fix it. Also if I can figure out why the memory isn't getting freed that could help too...
+# TODO: use less memory If I add color selectors on the sides to take up enough space
+# that the drawing area is only 240 * 255, I can take up half as much space storing the history.
 
 
 class Program:
@@ -26,11 +26,13 @@ class Program:
         if badge is None:
             badge = DC32_Badge()
         self.badge = badge
-        self.irda_uart = badge.irda_uart
         self.tft = badge.screen
         self.touch = badge.touch
-        self.history = PaintHistory()
-
+        print(f"Available: {gc.mem_free()}")
+        # size = min(20_000, round(gc.mem_free() / 50))
+        size = 5_000
+        print(f"using {size}")
+        self.history = PaintHistory(size)
         self.color, self.bg_color = self.random_colors()
 
     def random_colors(self):
@@ -40,7 +42,7 @@ class Program:
         bgv = 1
         if abs(fgh - bgh) < 0.3:
             bgv = 0.5
-        return lib.Color(fgh, 1, 1, "paint"), lib.Color(bgh, 1, bgv, "paint")
+        return common.Color(fgh, 1, 1, "paint"), common.Color(bgh, 1, bgv, "paint")
 
     def setup_buttons(self):
         self.badge.start_button.irq(self.clear_screen, trigger=Pin.IRQ_FALLING)
@@ -115,14 +117,14 @@ class Program:
             )
 
     def send_drawing(self, *args):
-        self.irda_uart.reset_machines()
+        self.badge.irda_uart.reset_machines()
         anim = BlinkRed(brightness=100, delay=30)
         print(f"Sending size: {self.history.index}")
         send_start = time.time_ns()
-        self.irda_uart.send_word(self.history.index)
+        self.badge.irda_uart.send_word(self.history.index)
         asyncio.sleep_ms(self.history.sleep_time)
         # time.sleep_ms(history.sleep_time)
-        self.irda_uart.send_word(self.color.c565)
+        self.badge.irda_uart.send_word(self.color.c565)
         asyncio.sleep_ms(self.history.sleep_time)
         # time.sleep_ms(history.sleep_time)
         for i in range(1, self.history.index + 1):
@@ -130,7 +132,7 @@ class Program:
             # p_x = history.x[i]
             # p_y = history.y[i]
             # print(f"{history.get_point(i):032b}")
-            self.irda_uart.send_word(self.history.get_point(i))
+            self.badge.irda_uart.send_word(self.history.get_point(i))
 
         print("sent")
         print(f"took {(time.time_ns() - send_start)/10**6} ms")
@@ -141,13 +143,13 @@ class Program:
         print("receiving...")
         anim = BlinkRed(brightness=100, delay=400)
         self.badge.set_eyes(anim.next())
-        self.irda_uart.reset_machines()
+        self.badge.irda_uart.reset_machines()
         size = None
         other_color = None
         rxed = 0
         # TODO: actually clear out the fifo, seems like something is wrong idk
         while (size is None or size == 0xFF_FF_FF_FF) and args[0].value() == 0:
-            size = self.irda_uart.receive_word()
+            size = self.badge.irda_uart.receive_word()
             self.badge.set_eyes(anim.next())
 
         if size is None or size == 0xFF_FF_FF_FF:
@@ -156,7 +158,7 @@ class Program:
             return
         print(f"{size:032b}")
         while other_color is None and args[0].value() == 0:
-            other_color = self.irda_uart.receive_word()
+            other_color = self.badge.irda_uart.receive_word()
             if other_color is not None:
                 print(other_color)
             # asyncio.sleep(0)
@@ -171,22 +173,22 @@ class Program:
             val = None
             while val is None and args[0].value() == 0:
                 self.badge.set_eyes(anim.next())
-                val = self.irda_uart.receive_word()
+                val = self.badge.irda_uart.receive_word()
                 # if val is None:
                 # print("wait")
             if val is None:
                 break
             # print(f"{val:032b}")
-            self.history.add_point(val)
+            if self.history.add_point(val):
+                self.tft.fill_circle(self.history.x(), self.history.y(), 3, other_color)
             rxed += 1
             # print(f"{history.x()}, {history.y()}")
-            self.tft.fill_circle(self.history.x(), self.history.y(), 3, other_color)
         self.badge.set_front(self.color)
 
     async def run(self):
+        self.badge.setup_ir(mode="sir")
         self.setup_buttons()
         self.clear_screen()
-        # set_up_buttons()
         prev_x, prev_y = (0, 0)
         self.is_running = True
         while self.is_running:
@@ -206,10 +208,10 @@ class Program:
             if t is not None:
                 x, y = t
                 # ignore any touches that are really close to the last recorded touch
-                if (x - prev_x) ** 2 + (y - prev_y) ** 2 > 5:
+                if (x - prev_x) ** 2 + (y - prev_y) ** 2 > 4:
                     prev_x, prev_y = t
-                    self.tft.fill_circle(x, y, 3, self.color.c565)
-                    self.history.add_x_y(x, y)
+                    if self.history.add_x_y(x, y):
+                        self.tft.fill_circle(x, y, 3, self.color.c565)
         self.exit()
 
     async def exit(self):
@@ -233,17 +235,17 @@ class Program:
 
 class PaintHistory:
     # TODO: make some kind of frame around the drawing area so it's only 255 x 240 so I can hold more dots in the history?
-    def __init__(self):
+    def __init__(self, size):
         # index is the most recently written index of the history array
         self.index = 0
         # this is the latest valid index to fast forward to
         # if we've undone, it will not match the current index
         self.latest_valid_index = 0
 
-        self.max_size = 20_000
+        self.max_size = size - 1
         self.sleep_time = 1
 
-        self.points = array("i", [0 for _ in range(self.max_size)])
+        self.points = array("i", [0 for _ in range(size)])
 
     def clear(self):
         self.index = 0
@@ -262,16 +264,17 @@ class PaintHistory:
         return self.points[self.index] & 0x00_00_FF_FF
 
     def add_x_y(self, x, y):
-        self.add_point((x << 16) | (y & 0x00_00_FF_FF))
+        return self.add_point((x << 16) | (y & 0x00_00_FF_FF))
 
     def add_point(self, p):
-        self.index += 1
         if self.index >= self.max_size:
             # history.index = 0
             print("outta space")
-            return
+            return False
+        self.index += 1
         self.points[self.index] = p
         self.latest_valid_index = self.index
+        return True
 
     def get_point(self, index):
         return self.points[index]

@@ -18,7 +18,7 @@ import json
 from other_hw.buzzer import Buzzer
 import os
 import asyncio
-from themes import Theme, builtin_themes
+from lib.themes import Theme, builtin_themes
 
 
 class DC32_Badge:
@@ -40,16 +40,26 @@ class DC32_Badge:
         x_calibration = prefs.get("x_calibration")
         y_calibration = prefs.get("y_calibration")
         self.touch = Touchscreen(x_calibration, y_calibration)
-        self.irda_uart = IrDA_UART(baud_rate=19200)
         self.neopixels = WS2812(auto_write=True)
         self.speaker = Buzzer()
-        self.cir = CIR()
+        # self.cir = CIR()
+        # self.irda_uart = IrDA_UART(baud_rate=19200)
+        self.cir = None
+        self.irda_uart = None
         self.setup_buttons()
         self.setup_sd_card()
         # TODO: these don't do anything yet
         self.ext_rtc = Ext_RTC()
         self.accelerometer = Accelerometer()
         self.animation = None
+
+    def setup_ir(self, mode="sir"):
+        if mode == "sir":
+            self.cir = None
+            self.irda_uart = IrDA_UART(baud_rate=19200)
+        if mode == "cir":
+            self.irda_uart = None
+            self.cir = CIR()
 
     def setup_buttons(self):
         self.up_button = Pin(bc.UP_BUTTON, mode=Pin.IN, pull=Pin.PULL_UP)

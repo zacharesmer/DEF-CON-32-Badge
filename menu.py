@@ -50,6 +50,7 @@ class MenuProgram:
             if first or time.ticks_diff(time.ticks_ms(), last_press) > 200:
                 first = False
                 last_press = time.ticks_ms()
+
                 self.current_selection = (self.current_selection - 1) % len(
                     self.options
                 )
@@ -57,8 +58,10 @@ class MenuProgram:
                     self.view_start = self.current_selection - self.column_elements + 1
                 # this means it's wrapped around to the end
                 if self.current_selection > self.view_start + self.view_elements:
-                    self.view_start = len(self.options) - (
-                        self.current_selection % self.view_elements
+                    self.view_start = (
+                        len(self.options)
+                        - (self.current_selection % self.view_elements)
+                        - 1
                     )
                 # print(self.current_selection)
                 self.show()
@@ -93,8 +96,8 @@ class MenuProgram:
         if new_idx >= 0:
             if new_idx < self.view_start:
                 self.view_start -= self.view_elements
-            self.show()
             self.current_selection = new_idx
+            self.show()
             # print(self.current_selection)
 
     def go_right(self, arg):

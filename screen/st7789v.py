@@ -15,18 +15,18 @@ import screen.st7789v_definitions as defs
 import uctypes
 import struct
 import array
-from lib import shitty_wrap_text
+from lib.common import shitty_wrap_text
 from math import floor
 
 
 class ST7789V:
     def __init__(
         self,
-        cs=bc.DISPLAY_CS_PIN,
-        dc=bc.DISPLAY_DC_PIN,
-        clk=bc.DISPLAY_SCK_PIN,
-        mosi=bc.DISPLAY_DO_PIN,
-        backlight=bc.DISPLAY_BL_PIN,
+        cs=bc._DISPLAY_CS_PIN,
+        dc=bc._DISPLAY_DC_PIN,
+        clk=bc._DISPLAY_SCK_PIN,
+        mosi=bc._DISPLAY_DO_PIN,
+        backlight=bc._DISPLAY_BL_PIN,
         manual_draw=False,
     ):
         #
@@ -36,6 +36,7 @@ class ST7789V:
             buf, bc.SCREEN_WIDTH, bc.SCREEN_HEIGHT, framebuf.RGB565
         )
         self.frame_buf.fill(defs.BLACK)
+        self.frame_buf.text("loading...", 10, 10, defs.WHITE)
 
         self.spi = PIO_SPI(sck=clk, mosi=mosi)
 
@@ -65,10 +66,10 @@ class ST7789V:
 
         # aborting all DMA channels may help restart DMA without a full power cycle?
         # TODO: this doesn't seem to be working
-        mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] = (0x1 << self.dma1.channel) | (
+        mem32[bc._DISPLAY_DMA_ABORT_ADDRESS] = (0x1 << self.dma1.channel) | (
             0x1 << self.dma3.channel
         )
-        while mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] != 0:
+        while mem32[bc._DISPLAY_DMA_ABORT_ADDRESS] != 0:
             continue
         # make a buffer with the data that dma3 will read from to update the config of dma1
         # self.dma1_count = array.array("I", [self.frame_buf_bytes])
@@ -78,7 +79,7 @@ class ST7789V:
             inc_write=False,
             irq_quiet=True,
             chain_to=self.dma3.channel,
-            treq_sel=bc.DISPLAY_REQ_SEL,
+            treq_sel=bc._DISPLAY_REQ_SEL,
             bswap=True,
         )
         self.dma1.config(
@@ -119,10 +120,10 @@ class ST7789V:
         self.dma3.active(True)
 
     def setup_DMA(self):
-        mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] = (
+        mem32[bc._DISPLAY_DMA_ABORT_ADDRESS] = (
             0x1  # aborting the channel seems to help restart DMA without a full power cycle
         )
-        while mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] != 0:
+        while mem32[bc._DISPLAY_DMA_ABORT_ADDRESS] != 0:
             continue
         self.dma1 = rp2.DMA()
         self.dma1_ctrl = self.dma1.pack_ctrl(
@@ -130,7 +131,7 @@ class ST7789V:
             inc_write=False,
             irq_quiet=False,
             # chain_to=self.dma2.channel,
-            treq_sel=bc.DISPLAY_REQ_SEL,
+            treq_sel=bc._DISPLAY_REQ_SEL,
             bswap=True,
         )
 

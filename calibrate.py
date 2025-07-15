@@ -11,7 +11,7 @@ class Program:
 
     async def run(self):
         self.is_running = True
-        from lib import lin_reg
+        from lib.common import lin_reg
 
         x_px = (40, 40, 280, 280)
         y_px = (40, 200, 40, 200)

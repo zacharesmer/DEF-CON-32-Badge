@@ -1,40 +1,45 @@
 # DEF CON 32 Badge Micropython Noun
 A launcher and some programs that use most of the hardware--IrDA, neopixels, touch screen, etc.
 
-All written in Micropython, so no need to compile extra C modules unless you really want to. To use the SD card you do need to set a couple of special flags when compiling MicroPython, but there are also pre-compiled UF2s.
+It's all written in Micropython, so no need to compile extra C modules unless you really want to. To use the SD card you do need to set a couple of special flags when compiling MicroPython, but there are also pre-compiled UF2s.
 
-If you have an extra PSRAM chip soldered on, there's also uf2 to actually take advantage of it (as much as micro python can, anyway). If you don't have that and you're interested, get yourself a APS6404L-3SQR-SN and stick it in the blank spot next to the D-Pad.
+If you have an extra PSRAM chip soldered on, there are uf2s to actually take advantage of it (as much as micro python can, anyway). If you don't have that and you're interested, get yourself a APS6404L-3SQR-SN and stick it in the blank spot next to the D-Pad.
 
 # Installing
-If you have the extra PSRAM soldered on, you can use the "-with-PSRAM" uf2 files instead. 
+If you have the extra PSRAM soldered on, you can use the "-with-PSRAM" uf2 files.
+
+Note: This will erase anything in the badge's flash memory, including your game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/).
 
 ## Option 1: Easiest
-![a picture of the def con badge, ears at the bottom, screen facing away. The four buttons on the back are highlighted: top left - red, bottom left - green, top right - yellow, bottom right - blue](badgeback.png)
+![a picture of the def con badge, ears at the top, screen facing away. The four buttons on the back are highlighted: top left - blue, bottom left - red, top right - green, bottom right - pink](badgeback.jpg)
 
-1. Hold the badge ears down with the screen facing away from you.
+1. Hold the badge ears up with the screen facing away from you.
 2. Plug the badge into your computer
-3. Hold top right button (yellow)
-4. Tap bottom right button (blue)
+3. Hold bottom left button (red)
+4. Tap top left button (blue), then you can release the bottom left button.
 5. A drive called RP2350 should appear mounted on your computer
 6. Drag `firmware-with-frozen-modules.uf2` into drive
-7. Badge should reboot automatically with new firmware
+7. The badge should reboot automatically with new firmware
 
 ## Option 2: For development
-Use this option if you want to make changes to the firmware.
+Do this if you want to make changes to the firmware.
 
 Perform the steps above, but use the file `firmware-empty.uf2`
 
-Using mpremote, Thonny, VSCode with MicroPico, or plain old file explorer since it's got USB MSC enabled, copy everything listed in manifest.py over to the badge. Restart it and main.py should run. 
+Then using mpremote, Thonny, VSCode with MicroPico, (or plain old file explorer since it's got USB MSC enabled), copy everything listed in manifest.py over to the badge. Restart it and main.py should run. 
 
-I also found it helpful to rename `main.py` when actively working on this so it wouldn't automatically start. That was resetting it gave me a chance not to run whatever bug I'd just written.
+I found it helpful to rename `main.py` when actively working on this so it wouldn't automatically start. That way, resetting the badge gave me a chance to recover if a change was making it crash or freeze.
+
+# IR Remote
+You can use your badge as a TV remote! Currently it can record and replay raw signals, and send NEC and NECext. This should cover the majority of recordings in the [IrDB](https://github.com/Lucaslhm/Flipper-IRDB), but not all. 
+
+You can save and read files to/from the SD card, or it will use flash memory if an SD card is not detected.
+
+If you would like to add support for another protocol, please do! The file parsing is a little messy but I left some comments in `read_ir_file.py` about where to add new protocols. The actual decoding logic for NEC is in `lib.py` if you want an example of that as well.
+
 
 # Configuration
 The system configuration (colors, animations, calibration, etc.) is written to a json file in the flash memory, so it should persist across restarts. If it's missing or has gotten messed up somehow, the badge will make a new, blank file. 
-
-# IR Remote
-You can use your badge as a TV remote! Currently it can only record and replay raw signals, so it won't work with existing recordings where the signal has been decoded, but I want to fix that soon. If you would like to help add support for a protocol, feel free! The easiest way to do it would be generating an array/list of timings, then sending it using the already made `send_timings` function. 
-
-You can save and read files to/from the SD card, or it will use flash memory if an SD card is not detected.
 
 # Paint
 Draw on the screen and send your drawing to another person through the retro-futuristic magic of Infrared! 
@@ -76,13 +81,14 @@ The file should have a .py extension and be a valid Python module name: all lowe
 
 [] Use the accelerometer somehow (to change the screen rotation some work also needs to be done on stopping the display DMA loop without a hard reset. That would have the added benefit of letting apps opt in to manual screen redraws, which would help avoid tearing. Suggestions and PRs welcome!)
 [] Use the RTC to keep track of the actual date and time
-[] Whatever you can dream up for the SAO port
-[] Neopixel animations!
-[] Custom themes! There is even a color chooser widget, it's just not used for anything yet
-[] Display images from a file on the screen (I think if you can convert them to bitmaps using RGB565 colors, it should be easy to dump them into the framebuf, I just haven't tried yet)
+[] An IrDA messaging app with text instead of drawings
+[] Something to use the speaker, maybe a piano app? 
+[] Use the SAO port for something
+[] Add more Neopixel animations!
+[] Custom themes! I made a color chooser widget, it's just not used for anything yet
+[] Display images from a file on the screen (I think if you convert them to bitmaps using RGB565 colors, it should be easy to dump them into the framebuf, I just haven't tried yet)
 [] Decode more IR formats
 [] Make it possible to delete and rename recordings/files/directories from the IR remote app
-[] Something to use the speaker, maybe a piano app? 
 [] Add a way to display text in other sizes and fonts (this is a solved problem in the russ hughes st7789 driver and micropython nano gui, but I haven't investigated how they did it yet. Nano gui is probably most similar because it uses framebufs)
 [] literally any decently usable tools for layouts and UI
 

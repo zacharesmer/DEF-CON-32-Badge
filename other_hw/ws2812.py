@@ -86,11 +86,11 @@ class WS2812:
         self.dma2 = rp2.DMA()
         self.dma3 = rp2.DMA()
 
-        mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] = (
+        mem32[bc._DISPLAY_DMA_ABORT_ADDRESS] = (
             self.dma1.channel
             | self.dma3.channel  # aborting DMA channels seems to help restart DMA without a full power cycle? idk actually
         )
-        while mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] != 0:
+        while mem32[bc._DISPLAY_DMA_ABORT_ADDRESS] != 0:
             continue
         # make a buffer with the data that dma3 will read from to update the config of dma1
         self.dma1_read_start = array.array("I", [uctypes.addressof(self.pixels)])

@@ -1,8 +1,8 @@
 import json
-from themes import builtin_themes, Theme
+from lib.themes import builtin_themes, Theme
 from menu import MenuProgram, MenuOption
-from lib import Color
-from animation_lib import FadeThroughColors
+from lib.common import Color
+from lib.animations import FadeThroughColors
 from color_selector import ColorSelector
 
 # TODO: theme customization

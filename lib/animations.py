@@ -1,6 +1,6 @@
 import random
 import board_config as bc
-import lib
+import lib.common as common
 
 
 class FadeRed:
@@ -118,4 +118,4 @@ class RainbowWheelPixel:
 
     def next(self):
         self.hue += self.step
-        return lib.hsv_to_rgb(self.hue, 1, 1)
+        return common.hsv_to_rgb(self.hue, 1, 1)

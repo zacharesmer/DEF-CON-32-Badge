@@ -1,4 +1,4 @@
-from lib import Color
+from lib.common import Color
 
 
 class Theme:
