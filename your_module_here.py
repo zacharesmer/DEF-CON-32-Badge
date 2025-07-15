@@ -1,6 +1,7 @@
 import asyncio
 from machine import Pin
 import board_config as bc
+from lib.animations import RainbowParty
 
 
 class Program:
@@ -47,16 +48,16 @@ class Program:
             box_height=bc.SCREEN_HEIGHT - 100,
             fill=True,
         )
-        # TODO something with the neopixels
+        self.badge.animation = RainbowParty()
         while self.is_running:
             await asyncio.sleep(0)
-        await self.exit()
+        # after this loop exits clean up anything like interrupts and animations.
+        # The main menu will also try to clean these up but it may not have accounted for everything
+        self.un_setup_buttons()
+        self.badge.animation = None
 
     async def exit(self):
         """
-        Clean up anything that ought to be cleaned up (interrupts, LEDs, )
-
         This is called when the menu needs to kill the program
         """
         self.is_running = False
-        self.un_setup_buttons()
