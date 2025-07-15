@@ -50,19 +50,20 @@ class TextEntry:
             if t is not None:
                 if time.ticks_diff(time.ticks_ms(), last_letter_at) > 500:
                     letter = self.letter_from_touch(t)
-                    print(letter)
-                    if letter == "^":
-                        self.caps = not self.caps
-                    elif letter == "<":
-                        self.text_entered = self.text_entered[:-1]
-                    elif letter == "OK":
-                        if len(self.text_entered) > 0:
-                            return self.text_entered
-                    else:
-                        if len(self.text_entered) < self.max_length:
-                            self.text_entered = f"{self.text_entered}{letter}"
-                    last_letter_at = time.ticks_ms()
-                    self.show_keyboard(keyboard=False)
+                    if letter is not None:
+                        # print(letter)
+                        if letter == "^":
+                            self.caps = not self.caps
+                        elif letter == "<":
+                            self.text_entered = self.text_entered[:-1]
+                        elif letter == "OK":
+                            if len(self.text_entered) > 0:
+                                return self.text_entered
+                        else:
+                            if len(self.text_entered) < self.max_length:
+                                self.text_entered = f"{self.text_entered}{letter}"
+                        last_letter_at = time.ticks_ms()
+                        self.show_keyboard(keyboard=False)
             await asyncio.sleep(0)
         self.exit()
 
