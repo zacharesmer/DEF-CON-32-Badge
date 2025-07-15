@@ -1,5 +1,9 @@
-# DEF CON 32 Badge Micropython Noun
-A launcher and some programs that use most of the hardware--IrDA, neopixels, touch screen, etc.
+# DEF CON 32 Badge Micropython
+A launcher and some programs for the DC32 badge. Highlights:
+
+- Universal IR remote
+- Drawing app with IR messaging
+- Blinky Lights
 
 It's all written in Micropython, so no need to compile extra C modules unless you really want to. To use the SD card you do need to set a couple of special flags when compiling MicroPython, but there are also pre-compiled UF2s.
 
@@ -10,7 +14,7 @@ If you have the extra PSRAM soldered on, you can use the "-with-PSRAM" uf2 files
 
 Note: This will erase anything in the badge's flash memory, including your game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/).
 
-## Option 1: Easiest
+## Option 1: Most Straightforward
 ![a picture of the def con badge, ears at the top, screen facing away. The four buttons on the back are highlighted: top left - blue, bottom left - red, top right - green, bottom right - pink](badgeback.jpg)
 
 1. Hold the badge ears up with the screen facing away from you.
@@ -22,16 +26,16 @@ Note: This will erase anything in the badge's flash memory, including your game'
 7. The badge should reboot automatically with new firmware
 
 ## Option 2: For development
-The previous option does not allow you to edit to files since they are frozen into the uf2. If you want to make changes to the python files, perform the steps above, but use the file `firmware-empty.uf2`
+The previous option does not allow you to make changes easily, since they are frozen into the uf2. If you want to hack on the python files, perform the steps above, but use the file `firmware-empty.uf2`
 
 Then using mpremote, Thonny, VSCode with MicroPico, (or plain old file explorer since it's got USB MSC enabled), copy everything listed in manifest.py over to the badge. Restart it and main.py should run. 
 
 I found it helpful to rename `main.py` when actively working on this so it wouldn't automatically start. That way, resetting the badge gave me a chance to recover if a change was making it crash or freeze.
 
 # IR Remote
-You can use your badge as a TV remote! Currently it can record and replay raw signals, and send NEC and NECext. This should cover the majority of recordings in the [IrDB](https://github.com/Lucaslhm/Flipper-IRDB), but not all. 
+Use your badge as a TV remote! Currently it can record and replay raw signals, and send NEC and NECext. This should cover the majority of recordings in the [IrDB](https://github.com/Lucaslhm/Flipper-IRDB), but not all. 
 
-You can save and read files to/from the SD card, or it will use flash memory if an SD card is not detected.
+It tries to save and read files to/from the SD card, or it will use flash memory if an SD card is not detected.
 
 If you would like to add support for another protocol, please do! The file parsing is a little messy but I left some comments in `read_ir_file.py` about where to add new protocols. The actual decoding logic for NEC is in `lib.py` if you want an example of that as well.
 
@@ -42,13 +46,13 @@ The system configuration (colors, animations, calibration, etc.) is written to a
 # Paint
 Draw on the screen and send your drawing to another person through the retro-futuristic magic of Infrared! 
 
-(note: this app uses IrDA SIR and is not compatible with the Flipper or other universal remotes that are expecting a carrier wave)
+(note: this app uses IrDA SIR and is not compatible with the Flipper or other universal remotes)
 
 ## Controls
 
-Left: Wait to receive a drawing
+Hold Left: Wait to receive a drawing
 
-Right: Send your drawing
+Right: Send your drawing to someone else
 
 B: Undo
 
@@ -56,7 +60,7 @@ A: Redo
 
 Start: Clear screen
 
-Select: Menu (to be implemented)
+Select: Menu/Home
 
 # Adding other programs
 
@@ -100,4 +104,5 @@ Thanks to Entropic Engineering for making a very cool and fun piece of hardware.
 - https://github.com/p0ns/micropython-dc32
 - https://dmitry.gr/?r=06.%20Thoughts&proj=09.ComplexPioMachines
 - https://github.com/Wind-stormger/micropython-uasycio-buzzer
+- 
 - Dmitry Grinberg's original badge firmware, which is in Discord somewhere
