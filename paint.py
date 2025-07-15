@@ -262,7 +262,7 @@ class PaintHistory:
         self.latest_valid_index = 0
 
         self.max_size = history_size - 1
-        self.sleep_time = 1
+        self.sleep_time = 3
 
         self.points = array("i", [0 for _ in range(history_size)])
 
