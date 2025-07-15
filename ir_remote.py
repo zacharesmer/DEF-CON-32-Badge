@@ -13,7 +13,7 @@ class Program(MenuProgram):
         try:
             os.chdir("sd")
         except OSError as e:
-            print(e)
+            print(f"SD card not available: {e}")
         # load a list of ir files stored in the folder "ir_recordings", or make the directory if it doesn't exist
         try:
             os.chdir("ir_recordings")
@@ -32,6 +32,7 @@ class Program(MenuProgram):
         self.badge.setup_ir("cir")
         self.show(refresh=True)
         await super().run()
+        self.badge.cir = None
 
     async def exit(self):
         self.is_running = False
@@ -233,11 +234,11 @@ class Program(MenuProgram):
             os.mkdir(name)
         self.setup_buttons()
         self.show(refresh=True)
-        print(name)
+        # print(name)
 
     async def make_new_file(self):
         self.un_setup_buttons()
-        name = await TextEntry(self.badge, 16, "Directory name:").get_text()
+        name = await TextEntry(self.badge, 16, "File name:").get_text()
         if name is not None:
             self.make_empty_ir_file(f"{name}.ir")
         self.setup_buttons()

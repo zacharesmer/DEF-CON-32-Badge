@@ -187,7 +187,7 @@ class ColorSelector:
         if v:
             val_rgb = 0
             val_step = round(255 / self.gradient_width)
-            print(val_step)
+            # print(val_step)
             y = self.v_start_height
             for x in range(
                 self.gradient_left_start, self.gradient_left_start + self.gradient_width

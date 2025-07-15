@@ -1,6 +1,3 @@
-import board_config as bc
-from machine import Timer, Pin
-from screen.st7789v_definitions import WHITE, BLACK
 import asyncio
 import gc
 import os
@@ -22,12 +19,12 @@ class MainMenu(MenuProgram):
         # built in programs go here
         progs = [
             MenuOption("ir_remote"),
-            MenuOption("calibrate"),
+            MenuOption("blinkenlights"),
             MenuOption("paint"),
             MenuOption("choose_theme"),
-            MenuOption("blinkenlights"),
+            MenuOption("calibrate"),
         ]
-        # and load any others registered in `external_programs.json`
+        # and load any others listed in `external_programs.json`
         valid_identifier_exp = re.compile("^[A-Za-z_][A-Za-z0-9_]*$")
         try:
             with open("programs.json", "r") as f:
@@ -35,22 +32,19 @@ class MainMenu(MenuProgram):
                 if ext.get("programs") is not None:
                     for p in ext["programs"]:
                         if valid_identifier_exp.match(p) is not None:
-                            print(p)
+                            # print(p)
                             progs.append(MenuOption(p))
                         else:
                             print(
                                 f"Invalid module name '{p}', see https://docs.python.org/3/reference/lexical_analysis.html#identifiers"
                             )
-        except OSError as e:
-            # if the file doesn't exist make a new one
-            print(e)
+        except (OSError, ValueError) as e:
+            # if the file doesn't exist or is invalid, make a new one
+            print(f"Error loading programs: {e}")
+            print("creating new file")
             with open("programs.json", "w") as f:
                 json.dump(
-                    {
-                        "programs": [
-                            # "your_module_here",
-                        ]
-                    },
+                    {"programs": []},
                     f,
                 )
         return progs

@@ -28,8 +28,8 @@ class PIO_SPI:
     def __init__(
         self,
         baudrate=62_500_000,
-        sck=board_config._DISPLAY_SCK_PIN,
-        mosi=board_config._DISPLAY_DO_PIN,
+        sck=board_config.DISPLAY_SCK_PIN,
+        mosi=board_config.DISPLAY_DO_PIN,
     ):
 
         lcd_mosi = Pin(mosi, mode=Pin.OUT)
@@ -38,10 +38,10 @@ class PIO_SPI:
         lcd_clk_pin = Pin(sck, mode=Pin.OUT)
         lcd_clk_pin.on()
 
-        pio = rp2.PIO(board_config._DISPLAY_PIO)
+        pio = rp2.PIO(board_config.DISPLAY_PIO)
 
         self.display_machine = pio.state_machine(
-            board_config._DISPLAY_SM,
+            board_config.DISPLAY_SM,
             pio_spi,
             freq=baudrate * 2,
             out_base=lcd_mosi,

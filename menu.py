@@ -14,7 +14,7 @@ class MenuProgram:
     def __init__(self, badge):
         self.badge = badge
         self.current_selection = 0
-        # self.options = []
+        self.options = []
         self.column_elements = 14
         self.num_columns = 2
         self.view_start = 0
@@ -154,10 +154,11 @@ class MenuProgram:
         self.show()
         while self.is_running:
             await asyncio.sleep(0)
-        await self.exit()
+        # teardown
+        self.un_setup_buttons()
+        del self.options
 
     async def exit(self):
-        self.un_setup_buttons()
         self.is_running = False
 
 

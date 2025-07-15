@@ -53,8 +53,9 @@ class Program(MenuProgram):
                             and "background2" in theme
                         ):
                             themes.append(Theme(theme))
-        except OSError as e:
-            print(e)
+        except (OSError, ValueError) as e:
+            print(f"Error loading themes: {e}")
+            print("Making new empty file")
             with open("themes.json", "w") as f:
                 json.dump({"themes": []}, f)
         return themes
@@ -62,8 +63,8 @@ class Program(MenuProgram):
     def save_theme_selection(self, theme):
         # write the selected theme to prefs.json
         prefs = self.badge.read_preferences()
-        print(prefs)
-        print(theme)
+        # print(prefs)
+        # print(theme)
         prefs["theme"] = theme.to_json()
         self.badge.write_preferences(prefs)
 

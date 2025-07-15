@@ -16,6 +16,7 @@ class Program(MenuProgram):
             MenuOption("Theme"),
             MenuOption("Rainbow Party"),
         ]
+        self.title = "Das Blinkenlights"
 
     def show(self):
         super().show()

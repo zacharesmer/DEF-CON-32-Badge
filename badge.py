@@ -83,7 +83,7 @@ class DC32_Badge:
             os.mount(sd, "/sd")
             # print(os.listdir("sd"))
         except OSError as e:
-            print(e)
+            print(f"Error mounting SD card: {e}")
             self.screen.fill(self.theme.bg1)
             self.screen.text_in_box(
                 "Note: Something is wrong with the SD card, and it couldn't be mounted. :( Is it inserted correctly and formatted as FAT?",
@@ -123,14 +123,11 @@ class DC32_Badge:
         prefs = {}
         try:
             with open("preferences.json", "r") as prefs_file:
-                try:
-                    prefs = json.load(prefs_file)
-                except ValueError as ve:
-                    # TODO: this means the JSON format is borked, consider copying a default config file
-                    print(ve)
-        except OSError as e:
-            print(e)
-            print("couldn't open file, returning empty preferences")
+                prefs = json.load(prefs_file)
+
+        except (OSError, ValueError) as e:
+            print(f"Error loading preferences: {e}")
+            print("making new empty file")
         return prefs
 
     def write_preferences(self, prefs):

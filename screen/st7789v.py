@@ -11,7 +11,8 @@ from screen.pio_spi import PIO_SPI
 from machine import Pin, mem32
 import time
 import rp2
-import screen.st7789v_definitions as defs
+
+# import screen.st7789v_definitions as defs
 import uctypes
 import struct
 import array
@@ -19,14 +20,56 @@ from lib.common import shitty_wrap_text
 from math import floor
 
 
+# ST7789 commands, from russ hughes driver and data sheet
+_ST7789_SWRESET = const(b"\x01")
+_ST7789_SLPOUT = const(b"\x11")
+_ST7789_NORON = const(b"\x13")
+_ST7789_INVOFF = const(b"\x20")
+_ST7789_DISPON = const(b"\x29")
+_ST7789_CASET = const(b"\x2a")
+_ST7789_RASET = const(b"\x2b")
+_ST7789_RAMWR = const(b"\x2c")
+_ST7789_COLMOD = const(b"\x3a")
+_ST7789_MADCTL = const(b"\x36")
+
+_BLACK = const(0x0000)
+_WHITE = const(0xFFFF)
+
+# init tuple format (b'command', b'data', delay_ms)
+_ST7789_INIT_CMDS = const(
+    (
+        (_ST7789_SWRESET, b"\x00", 100),
+        (_ST7789_SLPOUT, b"\x00", 50),  # Exit sleep mode
+        (_ST7789_COLMOD, b"\x55", 10),
+        #####
+        # TODO: consider factoring the rotation/window size stuff out so it is configurable
+        # Possible rotations: b"\x00", b"\x60", b"\xc0", b"\x"a0"
+        # This is also where RGB or BGR are set (| the value with 0x08 for BGR)
+        (_ST7789_MADCTL, b"\x60", 0),
+        # set window to be full size, 320 px wide, 240 px tall
+        # x end = 319 = 0000_0001_0011_1111 = 0x013F
+        (_ST7789_CASET, b"\x00\x00\x01\x3f", 0),
+        # y end = 239 = 0000_0000_1110_1111 = 0x00EF
+        (_ST7789_RASET, b"\x00\x00\x00\xef", 0),
+        #####
+        (_ST7789_INVOFF, b"\x00", 10),
+        (_ST7789_NORON, b"\x00", 10),
+        # Set gamma curve positive and negative polarity, does it do anything though?
+        # (_ST7789_PVGAMCTRL, b"\xd0\x00\x02\x07\x0a\x28\x32\x44\x42\x06\x0e\x12\x14\x17", 0),
+        # (_ST7789_NVGAMCTRL, b"\xd0\x00\x02\x07\x0a\x28\x31\x54\x47\x0e\x1c\x17\x1b\x1e", 0),
+        (_ST7789_DISPON, b"\x00", 10),
+    )
+)
+
+
 class ST7789V:
     def __init__(
         self,
-        cs=bc._DISPLAY_CS_PIN,
-        dc=bc._DISPLAY_DC_PIN,
-        clk=bc._DISPLAY_SCK_PIN,
-        mosi=bc._DISPLAY_DO_PIN,
-        backlight=bc._DISPLAY_BL_PIN,
+        cs=bc.DISPLAY_CS_PIN,
+        dc=bc.DISPLAY_DC_PIN,
+        clk=bc.DISPLAY_SCK_PIN,
+        mosi=bc.DISPLAY_DO_PIN,
+        backlight=bc.DISPLAY_BL_PIN,
         manual_draw=False,
     ):
         #
@@ -35,8 +78,8 @@ class ST7789V:
         self.frame_buf = framebuf.FrameBuffer(
             buf, bc.SCREEN_WIDTH, bc.SCREEN_HEIGHT, framebuf.RGB565
         )
-        self.frame_buf.fill(defs.BLACK)
-        self.frame_buf.text("loading...", 10, 10, defs.WHITE)
+        self.frame_buf.fill(_BLACK)
+        self.frame_buf.text("loading...", 10, 10, _WHITE)
 
         self.spi = PIO_SPI(sck=clk, mosi=mosi)
 
@@ -53,7 +96,7 @@ class ST7789V:
             self.setup_DMA_pingpong()
 
     def setup_display(self):
-        for cmd, data, delay in defs._ST7789_INIT_CMDS:
+        for cmd, data, delay in _ST7789_INIT_CMDS:
             self.send_command(cmd)
             self.send_argument(data)
             time.sleep_ms(delay)
@@ -66,10 +109,10 @@ class ST7789V:
 
         # aborting all DMA channels may help restart DMA without a full power cycle?
         # TODO: this doesn't seem to be working
-        mem32[bc._DISPLAY_DMA_ABORT_ADDRESS] = (0x1 << self.dma1.channel) | (
+        mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] = (0x1 << self.dma1.channel) | (
             0x1 << self.dma3.channel
         )
-        while mem32[bc._DISPLAY_DMA_ABORT_ADDRESS] != 0:
+        while mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] != 0:
             continue
         # make a buffer with the data that dma3 will read from to update the config of dma1
         # self.dma1_count = array.array("I", [self.frame_buf_bytes])
@@ -79,7 +122,7 @@ class ST7789V:
             inc_write=False,
             irq_quiet=True,
             chain_to=self.dma3.channel,
-            treq_sel=bc._DISPLAY_REQ_SEL,
+            treq_sel=bc.DISPLAY_REQ_SEL,
             bswap=True,
         )
         self.dma1.config(
@@ -111,7 +154,7 @@ class ST7789V:
             trigger=False,
         )
 
-        self.send_command(defs._ST7789_RAMWR)
+        self.send_command(_ST7789_RAMWR)
         self.send_argument(
             b"\x00"
         )  # need to send 1 byte of nothing so the 2 byte colors are offset correctly, LMAO
@@ -120,10 +163,10 @@ class ST7789V:
         self.dma3.active(True)
 
     def setup_DMA(self):
-        mem32[bc._DISPLAY_DMA_ABORT_ADDRESS] = (
+        mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] = (
             0x1  # aborting the channel seems to help restart DMA without a full power cycle
         )
-        while mem32[bc._DISPLAY_DMA_ABORT_ADDRESS] != 0:
+        while mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] != 0:
             continue
         self.dma1 = rp2.DMA()
         self.dma1_ctrl = self.dma1.pack_ctrl(
@@ -131,7 +174,7 @@ class ST7789V:
             inc_write=False,
             irq_quiet=False,
             # chain_to=self.dma2.channel,
-            treq_sel=bc._DISPLAY_REQ_SEL,
+            treq_sel=bc.DISPLAY_REQ_SEL,
             bswap=True,
         )
 
@@ -140,7 +183,7 @@ class ST7789V:
     def draw_frame(self, *args):
         self.cs.off()
         # Put the next pixel at the beginning of the screen's display RAM
-        self.send_command(defs._ST7789_RAMWR)
+        self.send_command(_ST7789_RAMWR)
         self.send_argument(
             b"\x00"
         )  # need to send 1 byte of nothing so the 2 byte colors are offset correctly, LMAO
