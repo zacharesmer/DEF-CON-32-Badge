@@ -211,3 +211,10 @@ def timings_from_necext(address, command):
 
 def in_range(val, target, tolerance):
     return val < target * (1 + tolerance) and val > target * (1 - tolerance)
+
+
+def int32_to_bytes(i):
+    """Convert an integer to four bytes in little-endian format.
+    from https://github.com/kentoj/python-fundamentals
+    """
+    return bytes((i & 0xFF, i >> 8 & 0xFF, i >> 16 & 0xFF, i >> 24 & 0xFF))

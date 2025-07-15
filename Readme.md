@@ -22,9 +22,7 @@ Note: This will erase anything in the badge's flash memory, including your game'
 7. The badge should reboot automatically with new firmware
 
 ## Option 2: For development
-Do this if you want to make changes to the firmware.
-
-Perform the steps above, but use the file `firmware-empty.uf2`
+The previous option does not allow you to edit to files since they are frozen into the uf2. If you want to make changes to the python files, perform the steps above, but use the file `firmware-empty.uf2`
 
 Then using mpremote, Thonny, VSCode with MicroPico, (or plain old file explorer since it's got USB MSC enabled), copy everything listed in manifest.py over to the badge. Restart it and main.py should run. 
 
