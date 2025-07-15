@@ -49,6 +49,7 @@ class DC32_Badge:
         # TODO: these don't do anything yet
         self.ext_rtc = Ext_RTC()
         self.accelerometer = Accelerometer()
+        self.animation = None
 
     def setup_buttons(self):
         self.up_button = Pin(bc.UP_BUTTON, mode=Pin.IN, pull=Pin.PULL_UP)
@@ -99,9 +100,14 @@ class DC32_Badge:
         for p in self.back_pixels:
             self.neopixels[p] = rgb
 
-    async def set_touch_calibration(self, prefs):
-        print("hiiiii")
-        # if no calibration is set, run the calibration program
+    def set_pixels(self, pixel_data):
+        for i, d in enumerate(pixel_data):
+            # print(f"setting pixel {i} to {d}")
+            self.neopixels[i] = d
+
+    # async def set_touch_calibration(self, prefs):
+    # print("hiiiii")
+    # if no calibration is set, run the calibration program
 
     def read_preferences(self):
         prefs = {}

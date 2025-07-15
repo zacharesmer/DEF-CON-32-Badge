@@ -15,7 +15,7 @@ import screen.st7789v_definitions as defs
 import uctypes
 import struct
 import array
-from lib import color565, shitty_wrap_text
+from lib import shitty_wrap_text
 from math import floor
 
 

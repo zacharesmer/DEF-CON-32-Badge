@@ -25,6 +25,7 @@ class MainMenu(MenuProgram):
             MenuOption("calibrate"),
             MenuOption("paint"),
             MenuOption("choose_theme"),
+            MenuOption("blinkenlights"),
         ]
         # and load any others registered in `external_programs.json`
         valid_identifier_exp = re.compile("^[A-Za-z_][A-Za-z0-9_]*$")
@@ -70,6 +71,7 @@ class MainMenu(MenuProgram):
         print(f"Free: {gc.mem_free()}")
         gc.collect()
         print(f"Free: {gc.mem_free()}")
+        self.badge.animation = None
 
     def select(self, *args):
         print(f"Selected {self.current_selection}")
@@ -122,6 +124,8 @@ class MainMenu(MenuProgram):
             await calibrate.Program(self.badge).run()
         await self.open()
         while True:
+            if self.badge.animation is not None:
+                self.badge.set_pixels(self.badge.animation.next())
             await asyncio.sleep(0)
 
     # no exit from the main menu

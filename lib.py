@@ -1,5 +1,6 @@
 from math import floor
 import random
+import board_config as bc
 
 
 # from Python colorsys library, approximately
@@ -110,38 +111,121 @@ class Color:
     def __iter__(self):
         return iter(self.RGB)
 
-
-class FadeRed:
-    def __init__(self, max_brightness=100, speed=0.01):
-        self.rgb = [0, 0, 0]
-        self.max_brightness = max_brightness
-        self.speed = speed
-        self.increasing = True
-
-    def next(self):
-        if random.random() < self.speed:
-            if self.rgb[0] >= self.max_brightness:
-                self.increasing = False
-            if self.rgb[0] <= 0:
-                self.increasing = True
-            if self.increasing:
-                self.rgb[0] += 1
-            else:
-                self.rgb[0] -= 1
-        return self.rgb
+    def __getitem__(self, index):
+        return self.RGB[index]
 
 
-class BlinkRed:
-    def __init__(self, brightness=100, delay=1):
-        self.on = False
-        self.count = 0
-        self.delay = delay
+# not actually used yet
+def nec_from_timings(timings):
+    decoded = []
+    tolerance = 0.3
+    preamble_high = 9_000
+    preamble_low = 4_500
+    bit_high = 560
+    one_low = 1_690
+    zero_low = 560
+    # 1 pulse preamble, 4 bytes that take 8 pulses each, and a stop pulse.
+    # multiply by 2 except the stop bit because we are also counting gaps
+    if len(timings) != 67:
+        return None
+    if not in_range(timings[0], preamble_high, tolerance):
+        return None
+    if not in_range(timings[1], preamble_low, tolerance):
+        return None
+    for t1, t2 in zip(timings[2::2], timings[3::2]):
+        if not in_range(t1, bit_high, tolerance):
+            return None
+        if in_range(t2, one_low, tolerance):
+            decoded.append(1)
+        elif in_range(t2, zero_low, tolerance):
+            decoded.append(0)
+    # don't really care how long the stop pulse is if we made it here
+    return decoded
 
-    def next(self):
-        self.count += 1
-        if self.count == self.delay:
-            self.on = not self.on
-            self.count = 0
-        if self.on:
-            return (100, 0, 0)
-        return (0, 0, 0)
+
+def timings_from_nec(address, command, ext=False):
+    if ext:
+        bits = 16
+    else:
+        bits = 8
+    print(f"address: {address:08b}, command: {command:08b}")
+    bit_high = 560
+    one_low = 1_690
+    zero_low = 560
+    # preamble
+    timings = [9000, 4500]
+    # the address is 32 bits but NEC uses 8 bits and sends the least significant first
+    mask = 0x1
+    inv_address = ~address
+    for _ in range(bits):
+        if address & mask > 0:
+            timings += [bit_high, one_low]
+        else:
+            timings += [bit_high, zero_low]
+        address >>= 1
+    for _ in range(bits):
+        if inv_address & mask > 0:
+            timings += [bit_high, one_low]
+        else:
+            timings += [bit_high, zero_low]
+        inv_address >>= 1
+    inv_command = ~command
+    for _ in range(bits):
+        if command & mask > 0:
+            timings += [bit_high, one_low]
+        else:
+            timings += [bit_high, zero_low]
+        command >>= 1
+    for _ in range(bits):
+        if inv_command & mask > 0:
+            timings += [bit_high, one_low]
+        else:
+            timings += [bit_high, zero_low]
+        inv_command >>= 1
+    # stop pulse
+    timings.append(bit_high)
+    return timings
+
+
+def timings_from_necext(address, command):
+    print(f"address: {address:08b}, command: {command:08b}")
+    bit_high = 560
+    one_low = 1_690
+    zero_low = 560
+    # preamble
+    timings = [9000, 4500]
+    # the address is 32 bits but NEC uses 8 bits and sends the least significant first
+    mask = 0x1
+    inv_address = ~address
+    for _ in range(8):
+        if address & mask > 0:
+            timings += [bit_high, one_low]
+        else:
+            timings += [bit_high, zero_low]
+        address >>= 1
+    for _ in range(8):
+        if inv_address & mask > 0:
+            timings += [bit_high, one_low]
+        else:
+            timings += [bit_high, zero_low]
+        inv_address >>= 1
+    inv_command = ~command
+    for _ in range(8):
+        if command & mask > 0:
+            timings += [bit_high, one_low]
+        else:
+            timings += [bit_high, zero_low]
+        command >>= 1
+    for _ in range(8):
+        if inv_command & mask > 0:
+            timings += [bit_high, one_low]
+        else:
+            timings += [bit_high, zero_low]
+        inv_command >>= 1
+    # stop pulse
+    timings.append(bit_high)
+    return timings
+
+
+def in_range(val, target, tolerance):
+    return val < target * (1 + tolerance) and val > target * (1 - tolerance)

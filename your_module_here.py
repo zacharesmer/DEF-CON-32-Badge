@@ -7,7 +7,7 @@ class Program:
     """
     Example program
 
-    There's a strong argument to be made that all programs should inherit from something like this, 
+    There's a strong argument to be made that all programs should inherit from something like this,
     so if you want to do that, go for it.
     """
 
@@ -29,8 +29,16 @@ class Program:
 
     async def run(self):
         self.is_running = True
+        self.badge.screen.frame_buf.rect(
+            40,
+            40,
+            bc.SCREEN_WIDTH - 80,
+            bc.SCREEN_HEIGHT - 80,
+            self.badge.theme.accent,
+            True,
+        )
         self.badge.screen.text_in_box(
-            "Edit programs.json to add a program to the menu",
+            "Edit programs.json to add a program to the menu!",
             50,
             50,
             self.badge.theme.fg2,
@@ -42,7 +50,7 @@ class Program:
         # TODO something with the neopixels
         while self.is_running:
             await asyncio.sleep(0)
-        self.exit()
+        await self.exit()
 
     async def exit(self):
         """

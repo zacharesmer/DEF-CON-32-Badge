@@ -93,9 +93,9 @@ class MenuProgram:
         if new_idx >= 0:
             if new_idx < self.view_start:
                 self.view_start -= self.view_elements
+            self.show()
             self.current_selection = new_idx
-        # print(self.current_selection)
-        self.show()
+            # print(self.current_selection)
 
     def go_right(self, arg):
         print("right")
@@ -104,8 +104,8 @@ class MenuProgram:
             if new_idx >= self.view_start + self.view_elements:
                 self.view_start += self.view_elements
             self.current_selection = new_idx
-        print(self.current_selection)
-        self.show()
+            # print(self.current_selection)
+            self.show()
 
     def select(self, arg):
         print(f"Selected {self.current_selection}")
@@ -155,6 +155,7 @@ class MenuProgram:
 
     async def exit(self):
         self.un_setup_buttons()
+        self.is_running = False
 
 
 class MenuOption:

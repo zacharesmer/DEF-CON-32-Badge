@@ -34,7 +34,7 @@ The system configuration (colors, animations, calibration, etc.) is written to a
 # IR Remote
 You can use your badge as a TV remote! Currently it can only record and replay raw signals, so it won't work with existing recordings where the signal has been decoded, but I want to fix that soon. If you would like to help add support for a protocol, feel free! The easiest way to do it would be generating an array/list of timings, then sending it using the already made `send_timings` function. 
 
-You can save and read files to/from the SD card, or to the flash memory if an SD card is not detected.
+You can save and read files to/from the SD card, or it will use flash memory if an SD card is not detected.
 
 # Paint
 Draw on the screen and send your drawing to another person through the retro-futuristic magic of Infrared! 
@@ -78,6 +78,7 @@ The file should have a .py extension and be a valid Python module name: all lowe
 [] Use the RTC to keep track of the actual date and time
 [] Whatever you can dream up for the SAO port
 [] Neopixel animations!
+[] Custom themes! There is even a color chooser widget, it's just not used for anything yet
 [] Display images from a file on the screen (I think if you can convert them to bitmaps using RGB565 colors, it should be easy to dump them into the framebuf, I just haven't tried yet)
 [] Decode more IR formats
 [] Make it possible to delete and rename recordings/files/directories from the IR remote app

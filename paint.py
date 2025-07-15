@@ -8,6 +8,7 @@ from machine import Pin, Timer
 import random
 from array import array
 import lib
+from animation_lib import BlinkRed
 from badge import DC32_Badge
 
 import asyncio
@@ -115,7 +116,7 @@ class Program:
 
     def send_drawing(self, *args):
         self.irda_uart.reset_machines()
-        anim = lib.BlinkRed(brightness=100, delay=30)
+        anim = BlinkRed(brightness=100, delay=30)
         print(f"Sending size: {self.history.index}")
         send_start = time.time_ns()
         self.irda_uart.send_word(self.history.index)
@@ -138,7 +139,7 @@ class Program:
 
     def receive_drawing(self, *args):
         print("receiving...")
-        anim = lib.BlinkRed(brightness=100, delay=400)
+        anim = BlinkRed(brightness=100, delay=400)
         self.badge.set_eyes(anim.next())
         self.irda_uart.reset_machines()
         size = None

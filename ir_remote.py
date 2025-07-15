@@ -3,6 +3,7 @@ import asyncio
 import os
 from menu import MenuProgram, MenuOption
 from text_entry import TextEntry
+from lib import timings_from_nec
 
 
 class Program(MenuProgram):
@@ -39,6 +40,10 @@ class Program(MenuProgram):
         output = []
         name = None
         line = f.readline()
+        decode_nec = False
+        decode_necext = False
+        address = None
+        command = None
         while line != "":
             split_line = line.split()
             # print(split_line[0])
@@ -46,8 +51,12 @@ class Program(MenuProgram):
             if split_line[0] == "name:":
                 # print(split_line)
                 name = split_line[1]
-            elif split_line[0] == "type:":
-                if split_line[1] == "parsed":
+            elif split_line[0] == "protocol:":
+                if split_line[1] == "NEC":
+                    decode_nec = True
+                elif split_line[1] == "NECext":
+                    decode_necext = True
+                else:
                     name = "Unimplemented"
                     output.append(
                         MenuOption(
@@ -66,7 +75,56 @@ class Program(MenuProgram):
                         )
                     )
                 except Exception as e:
-                    print(e)
+                    print(f"Error decoding raw IR signal: {e}")
+            elif split_line[0] == "address:":
+                if decode_nec:
+                    # address = [int(i, 16) for i in split_line[1:]]
+                    try:
+                        address = int(split_line[1], 16)
+                    except Exception as e:
+                        print(f"Error decoding NEC address: {e}")
+                elif decode_necext:
+                    try:
+                        address = int("".join(split_line[1:3]), 16)
+                    except Exception as e:
+                        print(f"Error decoding NEC address: {e}")
+            elif split_line[0] == "command:":
+                if decode_nec:
+                    # command = [int(i, 16) for i in split_line[1:]]
+                    try:
+                        command = int(split_line[1], 16)
+                        t = timings_from_nec(address, command)
+                        print(f"got timings from NEC: {t}")
+                        output.append(
+                            MenuOption(
+                                name,
+                                color=self.badge.theme.fg1,
+                                ir_code=t,
+                                action="Send",
+                            )
+                        )
+                    except Exception as e:
+                        print(f"Error decoding NEC command or signal: {e}")
+                    finally:
+                        decode_nec = False
+                elif decode_necext:
+                    try:
+                        command = int("".join(split_line[1:3]), 16)
+                        t = timings_from_nec(address, command, ext=True)
+                        print(f"got timings from NEC: {t}")
+                        output.append(
+                            MenuOption(
+                                name,
+                                color=self.badge.theme.fg1,
+                                ir_code=t,
+                                action="Send",
+                            )
+                        )
+                    except Exception as e:
+                        print(f"Error decoding NECext: {e}")
+                    finally:
+                        decode_necext = False
+
         return output
 
     # def append_ir_code(self, )
@@ -198,6 +256,7 @@ class Program(MenuProgram):
         )
         self.mode = "Recording"
         code = await self.badge.cir.receive_one_signal()
+        print(f"recorded {code}")
         self.mode = "File"
         if code is not None:
             self.un_setup_buttons()
