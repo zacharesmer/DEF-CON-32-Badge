@@ -1,4 +1,4 @@
-# DEF CON 32 Badge Toys
+# DEF CON 32 Badge MicroPython Firmware
 A launcher and some programs for the DC32 badge. Highlights:
 
 - Universal IR remote
