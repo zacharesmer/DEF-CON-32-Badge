@@ -210,6 +210,7 @@ class Program:
 
     async def run(self):
         self.badge.setup_ir(mode="sir")
+        self.badge.screen.start_continuous_refresh()
         self.setup_buttons()
         self.clear_screen()
         prev_x, prev_y = (0, 0)
@@ -236,6 +237,7 @@ class Program:
                     if self.history.add_x_y(x, y):
                         self.tft.fill_circle(x, y, 3, self.color.c565)
         # teardown
+        self.badge.screen.stop_continuous_refresh()
         del self.history.points
         del self.history
         self.badge.start_button.irq(None)
