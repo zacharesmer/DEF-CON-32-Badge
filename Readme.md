@@ -75,7 +75,7 @@ Place a python file into the flash memory, and add its module name to the list i
 
 The file should have a .py extension and be a valid Python module name: all lower case, can contain underscores, can contain numbers but does not start with a number. This is because it's just being loaded as a Python module. It may be easiest to copy the example in your_module_here.py and edit it.
 
-# Plans for the future and ideas if you want to contribute
+# Plans and ideas for the future 
 (A very non-exhaustive list, there is a lot that could be done!)
 
 - [ ] Use the accelerometer to change the screen rotation
