@@ -232,6 +232,7 @@ class ColorSelector:
         )
 
         self.badge.neopixels.fill(common.hsv_to_rgb(self.h, self.s, self.v))
+        self.badge.screen.draw_frame()
 
     def set_color_from_touch(self, t):
         x, y = t
