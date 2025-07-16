@@ -16,24 +16,32 @@ class MainMenu(MenuProgram):
         self.title = "Home"
 
     def load_programs(self):
-        # built in programs go here
+        # built in programs go here, files go in the directory "builtin_programs"
         progs = [
-            MenuOption("ir_remote"),
-            MenuOption("blinkenlights"),
-            MenuOption("paint"),
-            MenuOption("choose_theme"),
-            MenuOption("calibrate"),
+            MenuOption("IR Remote", modname="builtin_programs.ir_remote"),
+            MenuOption("Blinkenlights", modname="builtin_programs.blinkenlights"),
+            MenuOption("Paint", modname="builtin_programs.paint"),
+            MenuOption("Choose Theme", modname="builtin_programs.choose_theme"),
+            MenuOption("Calibrate", modname="builtin_programs.calibrate"),
         ]
         # and load any others listed in `external_programs.json`
-        valid_identifier_exp = re.compile("^[A-Za-z_][A-Za-z0-9_]*$")
+        valid_identifier_exp = re.compile("^[A-Za-z_][A-Za-z0-9_.]*$")
         try:
             with open("programs.json", "r") as f:
                 ext = json.load(f)
+                print(ext)
                 if ext.get("programs") is not None:
                     for p in ext["programs"]:
-                        if valid_identifier_exp.match(p) is not None:
+                        print(p)
+                        display_name = p.get("name")
+                        modname = p.get("modname")
+                        if (
+                            modname is not None
+                            and display_name is not None
+                            and valid_identifier_exp.match(modname) is not None
+                        ):
                             # print(p)
-                            progs.append(MenuOption(p))
+                            progs.append(MenuOption(display_name, modname=modname))
                         else:
                             print(
                                 f"Invalid module name '{p}', see https://docs.python.org/3/reference/lexical_analysis.html#identifiers"
@@ -80,8 +88,8 @@ class MainMenu(MenuProgram):
         # If you have an idea please send a PR because the root
         # directory is really cluttered with random garbage
         # and I wish it wasn't
-        modname = self.options[self.current_selection].name
-        module = __import__(modname)
+        modname = self.options[self.current_selection].modname
+        module = __import__(modname, None, None, ["Program"])
         self.current_program = module.Program(self.badge)
         print(f"Free: {gc.mem_free()}")
         gc.collect()

@@ -1,0 +1,8 @@
+{
+    "programs": [
+        {
+            "name": "Example",
+            "modname": "programs.your_module_here"
+        }
+    ]
+}
