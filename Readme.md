@@ -68,13 +68,13 @@ Select: Menu/Home
 
 # Adding other programs
 
-# WARNING
+## WARNING
 Any program you put on the badge can execute arbitrary MicroPython code with no guardrails whatsoever. Someone could do naughty things like make your badge emulate a keyboard and mouse and generate input to your computer over USB. So, please be careful. It's no more or less safe than downloading a different random uf2 and flashing your badge, but if I use the word "app" someone might get the idea there's any sandboxing whatsoever. There is not and you have been warned!
 
-I've also used less-than-officially-sanctioned-for-rp2350 SD card compilation options, so don't trust this to keep your data uncorrupted. If there's anything important on your SD card, back it up! 
+I've also used the less-than-officially-sanctioned-for-rp2350 SD card library, so don't trust this to keep your data uncorrupted. If there's anything important on your SD card, back it up! 
 
 ## Adding a program
-Place a python file into the flash memory, and add its module name to the list in `programs.json`. It will be put in the menu and when the badge starts up. 
+Place a python file into the flash memory, and add its module name to the list in `programs.json`. It will be put in the menu when the badge starts up. 
 
 The file should have a .py extension and be a valid Python module name: all lower case, can contain underscores, can contain numbers but does not start with a number. This is because it's just being loaded as a Python module. It may be easiest to copy the example in your_module_here.py and edit it.
 
