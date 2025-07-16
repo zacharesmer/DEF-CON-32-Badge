@@ -14,7 +14,7 @@ If you have added a PSRAM chip to your badge, there are uf2s to actually take ad
 
 If you have the PSRAM chip on your badge, use the "-psram" uf2 files.
 
-Note: Flashing new firmware will erase anything in the badge's flash memory. This includes the game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/).
+Note: Flashing new firmware will erase anything in the badge's flash memory (most of the time, if it's already holding micro python files it may not erase them). This includes the game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/).
 
 ## Option 1: Easiest
 ![a picture of the def con badge, ears at the top, screen facing away. The four buttons on the back are highlighted: top left - blue, bottom left - red, top right - green, bottom right - pink](images/badgeback.jpg)
@@ -46,6 +46,8 @@ It tries to save and read files to/from an `ir_recordings` folder on the SD card
 
 If you would like to add support for another protocol, please do! The file parsing is a little messy but I left some comments in `read_ir_file.py` about where to add new protocols. The actual decoding logic for NEC is in `lib.py` if you want an example of that as well.
 
+# LED animations
+There are some built in animations, and more can be added in an extra_animations.py file. There is an example in this repo, and a file will also be generated if one does not exist when the Blinkenlights program is run. See Contributing.md for an explanation of how the animations work.
 
 # Paint app
 Draw on the screen and send your drawing to another person through the retro-futuristic magic of Infrared! 

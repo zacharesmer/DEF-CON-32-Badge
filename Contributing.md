@@ -1,5 +1,5 @@
 # Contributing
-Contributions are welcome! Both apps and additions to the main firmware. There's plenty of low-hanging fruit!
+Contributions are welcome! Apps, animations, and additions to the main firmware. There's plenty of low-hanging fruit!
 
 # Building
 At some point down the road I'd like to get this into a Github action to make it less "trust me bro install this uf2", but this is how it is for now.
@@ -53,13 +53,13 @@ To set an animation, just set badge.animation to an `Animation` object. An `Anim
 
 The main loop in the main menu/launcher/shell/whatever it is, repeatedly calls `next()` on the `Animation` stored in badge.animation. Then it loads that value into the badge's neopixels. By default the neopixels are auto-written with DMA, so writing to the new values will only block the CPU for as long as it takes to update the values in the array.
 
-There is a `Color` class in `lib/common.py` for convenience when working with the same color on the screen and on the pixels. When something tries to use a `Color` as an int, it returns the screen's packed pixel data. When something tries to use it as an iterator, it returns its rgb value
+There is a `Color` class in `lib/common.py` for convenience when working with the same color on the screen and on the pixels. When something tries to use a `Color` as an int, it returns the screen's packed pixel data. When something tries to use it as an iterator, it returns its rgb value.
 
 ## Programs
 
-Programs can be loaded from flash. Just add the filename (sans .py) to the list of programs, and it can be launched from the main menu. Programs are only loaded at startup, so you also need to restart the badge.
+Programs can be loaded from additional files in flash memory. Just add the filename (sans .py) to the list of programs, and it can be launched from the main menu. Programs are only loaded at startup, so you also need to restart the badge.
 
-Programs should not add an interrupt handler for the "Select" button, because that is the way back to the main menu. This is not enforced by the software in any way, so good luck. 
+Programs should not add an interrupt handler for the "Select" button, because that is the way back to the main menu. This is not enforced by the software in any way though, so good luck. 
 
 A program class should present the following API:
 
@@ -79,16 +79,19 @@ After the loop, do any teardown or shutdown activities you need to do (unregiste
 
 `async def exit(self)`
 
-Basically just stop the main loop of the program. This is called by the menu to stop a program.
+Stop the main loop of the program so it can fall through and do whatever cleanup it needs to do. This is called by the menu to stop a program.
 
+### Lifecycle
 When a program is selected to run in the menu:
 - Menu removes the irqs from its buttons
 - The program is constructed
-- Its run() method is scheduled using asyncio, and then the menu awaits its return
+- Program's run() method is scheduled using asyncio, and then the menu awaits its return
 
 When a program is closed by pressing the select button to go back to the menu:
 - The program's exit() method is run
 - The menu's await gets fulfilled, and it removes the reference to the program so it can be garbage collected (eventually)
 
 ## Async
-The graphics run entirely off-CPU because the screen and neopixels refresh using DMA and PIO. Main loops in programs should still depend on a semaphore or some kind of signal triggered by `exit`, and any loops that you don't want to fully block the CPU should include `await asyncio.sleep()`.
+The graphics can optionally run entirely off-CPU, because the screen and neopixels refresh using DMA and PIO. That is disabled in the menu programs because it leads to screen flickering and tearing. If you want absolute maximum framerate even when you're blocking the CPU, look at paint.py to see how to set up the DMA loop and refresh the screen continuously without CPU involvement.
+
+Main loops in programs should depend on a semaphore or some kind of signal triggered by awaiting `exit`, and any loops that you don't want to fully block the CPU should include `await asyncio.sleep()`.
