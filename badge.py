@@ -13,7 +13,7 @@ from other_hw.accelerometer import Accelerometer
 from machine import Pin, SPI
 from sdcard import (
     SDCard,
-)  # consider importing this late or actually including a copy of the micropython lib files
+)
 import json
 from other_hw.buzzer import Buzzer
 import os
@@ -41,8 +41,8 @@ class DC32_Badge:
         self.touch = Touchscreen(x_calibration, y_calibration)
         self.neopixels = WS2812(auto_write=True)
         self.speaker = Buzzer()
-        # self.cir = CIR()
-        # self.irda_uart = IrDA_UART(baud_rate=19200)
+        # these can't coexist since they use the same IR hardware.
+        # Set them up when they are needed with `set_ir(mode)`
         self.cir = None
         self.irda_uart = None
         self.setup_buttons()
@@ -51,8 +51,6 @@ class DC32_Badge:
         self.ext_rtc = Ext_RTC()
         self.accelerometer = Accelerometer()
         self.animation = None
-        # # TODO: if this is to become a real feature, persist it in a json file
-        # self.screenshot_counter = 0
 
     def setup_ir(self, mode="sir"):
         if mode == "sir":

@@ -3,42 +3,6 @@ import board_config as bc
 import lib.common as common
 
 
-class FadeRed:
-    def __init__(self, max_brightness=100, speed=0.01):
-        self.rgb = [0, 0, 0]
-        self.max_brightness = max_brightness
-        self.speed = speed
-        self.increasing = True
-
-    def next(self):
-        if random.random() < self.speed:
-            if self.rgb[0] >= self.max_brightness:
-                self.increasing = False
-            if self.rgb[0] <= 0:
-                self.increasing = True
-            if self.increasing:
-                self.rgb[0] += 1
-            else:
-                self.rgb[0] -= 1
-        return self.rgb
-
-
-class BlinkRed:
-    def __init__(self, brightness=100, delay=1):
-        self.on = False
-        self.count = 0
-        self.delay = delay
-
-    def next(self):
-        self.count += 1
-        if self.count == self.delay:
-            self.on = not self.on
-            self.count = 0
-        if self.on:
-            return (100, 0, 0)
-        return (0, 0, 0)
-
-
 class FadeThroughColors:
     def __init__(self, colors, n=bc.NEOPIXEL_NUM_LEDS):
         self.colors = colors
@@ -98,11 +62,8 @@ class FadeThroughPixel:
 
 
 class RainbowParty:
-    def __init__(self, step=0.005):
-        self.pixels = [
-            RainbowWheelPixel(hue=i / bc.NEOPIXEL_NUM_LEDS, step=step)
-            for i in range(bc.NEOPIXEL_NUM_LEDS)
-        ]
+    def __init__(self, step=0.005, n=bc.NEOPIXEL_NUM_LEDS):
+        self.pixels = [RainbowWheelPixel(hue=i / n, step=step) for i in range(n)]
 
     def next(self):
         result = []
@@ -119,3 +80,20 @@ class RainbowWheelPixel:
     def next(self):
         self.hue += self.step
         return common.hsv_to_rgb(self.hue, 1, 1)
+
+
+class BlinkRed:
+    def __init__(self, brightness=100, delay=1):
+        self.brightness = brightness
+        self.on = False
+        self.count = 0
+        self.delay = delay
+
+    def next(self):
+        self.count += 1
+        if self.count == self.delay:
+            self.on = not self.on
+            self.count = 0
+        if self.on:
+            return (self.brightness, 0, 0)
+        return (0, 0, 0)

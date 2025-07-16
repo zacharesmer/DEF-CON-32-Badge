@@ -86,9 +86,11 @@ class WS2812:
         self.dma2 = rp2.DMA()
         self.dma3 = rp2.DMA()
 
-        mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] = (0x1 << self.dma1.channel) | (
-            0x1 << self.dma3.channel
-        )  # aborting DMA channels seems to help restart DMA without a full power cycle? idk actually
+        mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] = (
+            (0x1 << self.dma1.channel)
+            | (0x1 << self.dma2.channel)
+            | (0x1 << self.dma3.channel)
+        )  # aborting DMA channels should help restart DMA without a full power cycle
         while mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] != 0:
             continue
         # make a buffer with the data that dma3 will read from to update the config of dma1

@@ -1,7 +1,7 @@
 import asyncio
 import gc
 import os
-from menu import MenuProgram, MenuOption
+from lib.menu import MenuProgram, MenuOption
 import json
 import re
 import calibrate

@@ -1,7 +1,7 @@
 # a program to be a TV remote! yay
 import asyncio
 import os
-from menu import MenuProgram, MenuOption
+from lib.menu import MenuProgram, MenuOption
 from lib.text_entry import TextEntry
 from lib.common import timings_from_nec
 

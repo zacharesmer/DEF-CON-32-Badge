@@ -107,8 +107,7 @@ class ST7789V:
         # so named because I thought I also needed dma2 to reset the count, but apparently that's not true
         self.dma3 = rp2.DMA()
 
-        # aborting all DMA channels may help restart DMA without a full power cycle?
-        # TODO: this doesn't seem to be working
+        # aborting all DMA channels should help restart DMA without a full power cycle
         mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] = (0x1 << self.dma1.channel) | (
             0x1 << self.dma3.channel
         )

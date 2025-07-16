@@ -9,7 +9,8 @@ class Program:
     Example program
 
     There's a strong argument to be made that all programs should inherit from something like this,
-    so if you want to do that, go for it.
+    so if you want to make a child class, go for it. Also look at MenuProgram in menu.py; it
+    may be a more useful thing to inherit from.
     """
 
     def __init__(self, badge):

@@ -1,12 +1,12 @@
 import json
 from lib.themes import builtin_themes, Theme
-from menu import MenuProgram, MenuOption
+from lib.menu import MenuProgram, MenuOption
 from lib.common import Color
 from lib.animations import FadeThroughColors
-from color_selector import ColorSelector
+
+# from lib.color_selector import ColorSelector
 
 # TODO: theme customization
-
 
 class Program(MenuProgram):
     def __init__(self, badge):

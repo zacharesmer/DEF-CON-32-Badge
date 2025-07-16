@@ -1,20 +1,20 @@
-# DEF CON 32 Badge Micropython
+# DEF CON 32 Badge Toys
 A launcher and some programs for the DC32 badge. Highlights:
 
 - Universal IR remote
 - Drawing app with IR messaging
 - Blinky Lights
 
-It's all written in Micropython, so no need to compile extra C modules unless you really want to. To use the SD card you do need to set a couple of special flags when compiling MicroPython, but there are also pre-compiled UF2s.
+It's all written in Micropython and the drivers use the hardware to go fast, so no need to compile extra C modules unless you really want to. 
 
 If you have an extra PSRAM chip soldered on, there are uf2s to actually take advantage of it (as much as micro python can, anyway). If you don't have that and you're interested, get yourself a APS6404L-3SQR-SN and stick it in the blank spot next to the D-Pad.
 
 # Installing
-If you have the extra PSRAM soldered on, you can use the "-with-PSRAM" uf2 files.
+If you have PSRAM installed, you can use the "-psram" uf2 files.
 
-Note: This will erase anything in the badge's flash memory, including your game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/).
+Note: Flashing new firmware will erase anything in the badge's flash memory (unless it's already micropython files), including your game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/).
 
-## Option 1: Most Straightforward
+## Option 1: Easiest
 ![a picture of the def con badge, ears at the top, screen facing away. The four buttons on the back are highlighted: top left - blue, bottom left - red, top right - green, bottom right - pink](badgeback.jpg)
 
 1. Hold the badge ears up with the screen facing away from you.
@@ -22,15 +22,19 @@ Note: This will erase anything in the badge's flash memory, including your game'
 3. Hold bottom left button (red)
 4. Tap top left button (blue), then you can release the bottom left button.
 5. A drive called RP2350 should appear mounted on your computer
-6. Drag `firmware-with-frozen-modules.uf2` into drive
-7. The badge should reboot automatically with new firmware
+6. Drag `firmware-frozen-modules.uf2` into drive
+7. The badge should reboot automatically with the new firmware
 
 ## Option 2: For development
-The previous option does not allow you to make changes easily, since they are frozen into the uf2. If you want to hack on the python files, perform the steps above, but use the file `firmware-empty.uf2`
+The previous option does not allow you to make changes easily, since the python files are compiled to bytecode and frozen into the firmware. This is more efficient for RAM and storage, but not ideal if you want to hack on it.
 
-Then using mpremote, Thonny, VSCode with MicroPico, (or plain old file explorer since it's got USB MSC enabled), copy everything listed in manifest.py over to the badge. Restart it and main.py should run. 
+To get the files into the flash, do the same steps as above, but use the file `firmware-empty.uf2`. This is just plain old micropython plus the SD card library. I'm pretty sure you can also use fully vanilla MicroPython and the actual SDCard file from [[here](https://github.com/micropython/micropython-lib/blob/f95568da431c6506354adb93343206c04a94dc11/micropython/drivers/storage/sdcard/sdcard.py)].
 
-I found it helpful to rename `main.py` when actively working on this so it wouldn't automatically start. That way, resetting the badge gave me a chance to recover if a change was making it crash or freeze.
+Then using mpremote, Thonny, VSCode with MicroPico, or something else, copy everything listed in manifest.py over to the badge. Restart it and main.py should run (or you may have to run it manually if the program you're using allows that). 
+
+(I found it helpful to rename `main.py` when actively working on this so it wouldn't automatically run. That way, resetting the badge gave me a chance to recover if a change was making it crash or freeze.)
+
+See additional information about building your own uf2 in [Contributing.md](Contributing.md)
 
 # IR Remote
 Use your badge as a TV remote! Currently it can record and replay raw signals, and send NEC and NECext. This should cover the majority of recordings in the [IrDB](https://github.com/Lucaslhm/Flipper-IRDB), but not all. 
@@ -40,10 +44,7 @@ It tries to save and read files to/from the SD card, or it will use flash memory
 If you would like to add support for another protocol, please do! The file parsing is a little messy but I left some comments in `read_ir_file.py` about where to add new protocols. The actual decoding logic for NEC is in `lib.py` if you want an example of that as well.
 
 
-# Configuration
-The system configuration (colors, animations, calibration, etc.) is written to a json file in the flash memory, so it should persist across restarts. If it's missing or has gotten messed up somehow, the badge will make a new, blank file. 
-
-# Paint
+# Paint app
 Draw on the screen and send your drawing to another person through the retro-futuristic magic of Infrared! 
 
 (note: this app uses IrDA SIR and is not compatible with the Flipper or other universal remotes)
@@ -60,18 +61,14 @@ A: Redo
 
 Start: Clear screen
 
-Select: Menu/Home
+Select: Menu/Home 
 
 # Adding other programs
 
-# WARNINGS
-Any program you put on the badge can execute arbitrary MicroPython code with no guardrails whatsoever. If you have a DEF CON badge you probably have some idea of how dangerous that could be. Someone could make your badge **emulate a keyboard and mouse and generate arbitrary input to your computer over USB**, so please be careful. It's no more or less safe than downloading a different random uf2 and flashing your badge, but if I use the word "app" someone might get the idea there's any sandboxing whatsoever. You have been warned!
+# WARNING
+Any program you put on the badge can execute arbitrary MicroPython code with no guardrails whatsoever. Someone could do naughty things like make your badge emulate a keyboard and mouse and generate arbitrary input to your computer over USB. So, please be careful. It's no more or less safe than downloading a different random uf2 and flashing your badge, but if I use the word "app" someone might get the idea there's any sandboxing whatsoever. There is not and you have been warned!
 
-This uses the experimental SD card and USB MSC compile flags, which may lead to **data corruption**. Please keep a backup of anything you care about on your SD card or in the flash memory! It uses IR files compatible with the Flipper, but please don't put your Flipper SD card into this thing without a backup.
-
-A lot of ink has been spilled in the [Micropython Github issues](https://github.com/micropython/micropython/issues/8426) about why USB MSC is problematic and should not be enabled. Both the computer and the micro controller may end up trying to write to the file system with different understandings of what is stored in it and where, and this kills the file system. 
-
-Please don't store the only copy of anything important on the SD card you're putting into the badge!
+I've also used less-than-officially-sanctioned-for-rp2350 SD card compilation options, so don't trust this to keep your data uncorrupted. If there's anything important on your SD card, back it up! 
 
 ## Adding a program
 Place a python file into the flash memory, and add its module name to the list in `programs.json`. It will be put in the menu and when the badge starts up. 
@@ -81,18 +78,19 @@ The file should have a .py extension and be a valid Python module name: all lowe
 # Plans for the future and ideas if you want to contribute
 (A very non-exhaustive list, there is a lot that could be done!)
 
-[] Use the accelerometer somehow (to change the screen rotation some work also needs to be done on stopping the display DMA loop without a hard reset. That would have the added benefit of letting apps opt in to manual screen redraws, which would help avoid tearing. Suggestions and PRs welcome!)
+[] Use the accelerometer to change the screen rotation
 [] Use the RTC to keep track of the actual date and time
 [] An IrDA messaging app with text instead of drawings
 [] Something to use the speaker, maybe a piano app? 
 [] Use the SAO port for something
-[] Add more Neopixel animations!
-[] Custom themes! I made a color chooser widget, it's just not used for anything yet
+[] Lots more Neopixel animations
+[] Custom themes--I made a color chooser widget, it's just not used for anything yet
 [] Display images from a file on the screen (I think if you convert them to bitmaps using RGB565 colors, it should be easy to dump them into the framebuf, I just haven't tried yet)
 [] Decode more IR formats
 [] Make it possible to delete and rename recordings/files/directories from the IR remote app
 [] Add a way to display text in other sizes and fonts (this is a solved problem in the russ hughes st7789 driver and micropython nano gui, but I haven't investigated how they did it yet. Nano gui is probably most similar because it uses framebufs)
-[] literally any decently usable tools for layouts and UI
+[] literally any decently usable tools for creating layouts and UIs
+[] Make a nice interface for apps to opt into manually triggering screen redraws so they can have smoother animations
 
 # Thank you
 Thanks to Entropic Engineering for making a very cool and fun piece of hardware. Additional credit for various helpful things, examples, tutorials, and prior art:
