@@ -42,7 +42,7 @@ See additional information about building your own uf2 in [Contributing.md](Cont
 # IR Remote
 Use your badge as a TV remote! Currently it can record and replay raw signals, and send NEC and NECext. This should cover the majority of recordings in the [IrDB](https://github.com/Lucaslhm/Flipper-IRDB), but not all. 
 
-It tries to save and read files to/from the SD card, or it will use flash memory if an SD card is not detected.
+It tries to save and read files to/from an `ir_recordings` folder on the SD card, but it will use flash memory if an SD card is not detected.
 
 If you would like to add support for another protocol, please do! The file parsing is a little messy but I left some comments in `read_ir_file.py` about where to add new protocols. The actual decoding logic for NEC is in `lib.py` if you want an example of that as well.
 
