@@ -7,12 +7,10 @@ A launcher and some programs for the DC32 badge. Highlights:
 
 It's all written in Micropython and the drivers use the hardware to go fast, so no need to compile extra C modules unless you really want to. 
 
-If you have added a PSRAM chip, there are uf2s to actually take advantage of it (as much as micro python can, anyway). If you don't have that and you're interested, get yourself a APS6404L-3SQR-SN or similar and stick it in the blank spot next to the D-Pad.
-
 # Installing
-If you have the PSRAM chip on your badge, you can use the "-psram" uf2 files.
+If you have added a PSRAM chip, there are uf2s to actually take advantage of it (as much as micro python can, anyway). If you don't have that and you're interested, get yourself a APS6404L-3SQR-SN or similar and stick it in the blank spot next to the D-Pad. If you have the PSRAM chip on your badge, use the "-psram" uf2 files.
 
-Note: Flashing new firmware will erase anything in the badge's flash memory (unless it's already micropython files), including your game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/).
+Note: Flashing new firmware will erase anything in the badge's flash memory (unless it's already micropython files). This includes the game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/).
 
 ## Option 1: Easiest
 ![a picture of the def con badge, ears at the top, screen facing away. The four buttons on the back are highlighted: top left - blue, bottom left - red, top right - green, bottom right - pink](images/badgeback.jpg)
