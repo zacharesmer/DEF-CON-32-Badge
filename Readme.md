@@ -5,7 +5,7 @@ A launcher and some programs for the DC32 badge. Highlights:
 - Drawing app with IR messaging
 - Blinky Lights
 
-It's all written in Micropython and the drivers use the hardware to go fast, so no need to compile extra C modules unless you add something that requires it. 
+It's all written in Micropython and the drivers use the peripherals to go fast, so no need to compile extra C modules unless you add something that requires it. 
 
 ![the def con 32 badge in pink lighting with "hack the planet" in handwriting on the screen](images/htp.jpg)
 
@@ -14,26 +14,26 @@ If you have added a PSRAM chip to your badge, there are uf2s to actually take ad
 
 If you have the PSRAM chip on your badge, use the "-psram" uf2 files.
 
-Note: Flashing new firmware will erase anything in the badge's flash memory (except sometimes if it's already micropython files). This includes the game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/).
+Note: Flashing new firmware will erase anything in the badge's flash memory. This includes the game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/).
 
 ## Option 1: Easiest
 ![a picture of the def con badge, ears at the top, screen facing away. The four buttons on the back are highlighted: top left - blue, bottom left - red, top right - green, bottom right - pink](images/badgeback.jpg)
 
-1. Download `firmware-frozen-modules.uf2` from the `compiled firmware` folder. 
+1. Download [firmware-frozen-modules.uf2](compiled%20firmware/firmware-frozen-modules.uf2) (in the `compiled firmware` folder)
 2. Hold the badge ears up with the screen facing away from you.
 3. Plug the badge into your computer (or phone, I've tested on Android, not sure about iOS). 
-4. Hold bottom left button (red)
-5. Tap top left button (blue), then you can release the bottom left button.
+4. Hold bottom left button (red, Bootsel)
+5. Tap top left button (blue, Reset)
 6. A drive called RP2350 should appear. 
 7. Drag `firmware-frozen-modules.uf2` into the drive. 
 8. The badge should reboot automatically with the new firmware. 
 
 ## Option 2: For development
-The previous option does not allow you to make changes easily, since the python files are compiled to bytecode and frozen into the firmware. This is more efficient for RAM and storage, but not ideal if you want to hack on it.
+Option 1 does not allow you to make changes easily, since the python files are compiled to bytecode and frozen into the firmware. This is more efficient for RAM and storage, but not ideal if you want to hack on it.
 
 To get the files into the flash, do the same steps as above, but use the file `firmware-empty.uf2`. This is just plain old micropython plus the SD card library. I'm pretty sure you can also use fully vanilla MicroPython and the actual SDCard file from [[here](https://github.com/micropython/micropython-lib/blob/f95568da431c6506354adb93343206c04a94dc11/micropython/drivers/storage/sdcard/sdcard.py)].
 
-Then using mpremote, Thonny, VSCode with MicroPico, or something else, copy everything listed in manifest.py over to the badge. Restart it and main.py should run (or you may have to run it manually if the program you're using allows that). 
+Then using mpremote, Thonny, VSCode with MicroPico, or something else, copy everything listed in manifest.py over to the badge. Restart it and main.py should run (or you may have to run it manually if the program you're using pauses the execution). 
 
 (I found it helpful to rename `main.py` when actively working on this so it wouldn't automatically run. That way, resetting the badge gave me a chance to recover if a change was making it crash or freeze.)
 
@@ -74,9 +74,18 @@ Any program you put on the badge can execute arbitrary MicroPython code with no 
 I've also used the less-than-officially-sanctioned-for-rp2350 SD card library, so don't trust this to keep your data uncorrupted. If there's anything important on your SD card, back it up! 
 
 ## Adding a program
-Place a python file into the flash memory, and add its module name to the list in `programs.json`. It will be put in the menu when the badge starts up. 
+Place a python file into the flash memory, and add an entry to the list in `programs.json`. It will be put in the menu when the badge starts up. Each item in the "programs" list in `programs.json` is a JSON object:
 
-The file should have a .py extension and be a valid Python module name: all lower case, can contain underscores, can contain numbers but does not start with a number. This is because it's just being loaded as a Python module. It may be easiest to copy the example in your_module_here.py and edit it.
+```json
+{
+    "name": "Display Name",
+    "modname": "path.to.module_name"
+}
+```
+
+The file with the program needs a .py extension and must be a valid Python module name: all lower case, can contain underscores, can contain numbers but does not start with a number. This is because it's just being loaded as a Python module. 
+
+It may be easiest to copy the example file `your_module_here.py` and edit it. You can put it inside a directory, just make the module name in the JSON object the full path separated by dots (like you would do for a Python import statement). There is an example in programs.json.
 
 # Plans and ideas for the future 
 (A very non-exhaustive list, there is a lot that could be done!)

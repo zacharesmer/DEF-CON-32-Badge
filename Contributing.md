@@ -10,7 +10,14 @@ To build a frozen uf2 from source:
 
 2. Download [MicroPython](https://github.com/micropython/micropython) and follow [their instructions](https://docs.micropython.org/en/latest/develop/gettingstarted.html) to install any dependencies and get things set up.
 
-3. From the root of the micropython directory, run:
+3. To enable USB MSC (this makes the badge show up as flash media when plugged into a computer), edit `/ports/rp2/mpconfigport.h`
+
+```diff
+-#define MICROPY_HW_USB_MSC (0)
++#define MICROPY_HW_USB_MSC (1)
+```
+
+4. From the root of the micropython directory, run:
 
 ```make
 make -j -C ports/rp2 BOARD=RPI_PICO2 FROZEN_MANIFEST="/path/to/this/repo/manifest.py"
@@ -25,7 +32,7 @@ If you have PSRAM and want to use it, add this to whichever board definitions fi
 #define MICROPY_HW_ENABLE_PSRAM (1)
 ```
 
-There may be a way to pass that in on the command line instead of editing the file, but I am not a CMake wizard, so I do not know it.
+There may be a way to pass these changes in on the command line instead of editing the files, but I am not a CMake wizard, so I do not know it.
 
 This will hopefully generate several files, including `firmware.uf2` that end up in `/ports/rp2/BUILD-RPI_PICO2`. 
 

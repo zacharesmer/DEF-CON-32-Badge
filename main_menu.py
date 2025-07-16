@@ -4,7 +4,7 @@ import os
 from lib.menu import MenuProgram, MenuOption
 import json
 import re
-import calibrate
+import builtin_programs.calibrate as calibrate
 
 
 class MainMenu(MenuProgram):
