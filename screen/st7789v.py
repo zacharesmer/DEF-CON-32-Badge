@@ -164,6 +164,8 @@ class ST7789V:
         self.dma3.active(True)
 
     def stop_continuous_refresh(self):
+        if self.manual_draw:
+            return
         self.manual_draw = True
         nullbuf = array.array("I", [0])
         # this will stop the loop because it's no longer writing to dma2's trigger register

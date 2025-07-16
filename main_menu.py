@@ -65,6 +65,7 @@ class MainMenu(MenuProgram):
         # self.badge.a_button.irq(None)
         # self.badge.left_button.irq(None)
         # self.badge.right_button.irq(None)
+        self.badge.screen.stop_continuous_refresh()
         self.badge.b_button.irq(None)
         self.setup_buttons()
         # TODO: make this start the default animation instead
