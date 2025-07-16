@@ -5,23 +5,28 @@ A launcher and some programs for the DC32 badge. Highlights:
 - Drawing app with IR messaging
 - Blinky Lights
 
-It's all written in Micropython and the drivers use the hardware to go fast, so no need to compile extra C modules unless you really want to. 
+It's all written in Micropython and the drivers use the hardware to go fast, so no need to compile extra C modules unless you add something that requires it. 
+
+![the def con 32 badge in pink lighting with "hack the planet" in handwriting on the screen](images/htp.jpg)
 
 # Installing
-If you have added a PSRAM chip, there are uf2s to actually take advantage of it (as much as micro python can, anyway). If you don't have that and you're interested, get yourself a APS6404L-3SQR-SN or similar and stick it in the blank spot next to the D-Pad. If you have the PSRAM chip on your badge, use the "-psram" uf2 files.
+If you have added a PSRAM chip to your badge, there are uf2s to actually take advantage of it (as much as micro python can, anyway). If you don't have that and you're interested, get yourself a APS6404L-3SQR-SN or similar and stick it in the blank spot next to the D-Pad (hardware schematic is on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/)). 
 
-Note: Flashing new firmware will erase anything in the badge's flash memory (unless it's already micropython files). This includes the game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/).
+If you have the PSRAM chip on your badge, use the "-psram" uf2 files.
+
+Note: Flashing new firmware will erase anything in the badge's flash memory (except sometimes if it's already micropython files). This includes the game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/).
 
 ## Option 1: Easiest
 ![a picture of the def con badge, ears at the top, screen facing away. The four buttons on the back are highlighted: top left - blue, bottom left - red, top right - green, bottom right - pink](images/badgeback.jpg)
 
-1. Hold the badge ears up with the screen facing away from you.
-2. Plug the badge into your computer
-3. Hold bottom left button (red)
-4. Tap top left button (blue), then you can release the bottom left button.
-5. A drive called RP2350 should appear mounted on your computer
-6. Drag `firmware-frozen-modules.uf2` into drive
-7. The badge should reboot automatically with the new firmware
+1. Download `firmware-frozen-modules.uf2` from the `compiled firmware` folder. 
+2. Hold the badge ears up with the screen facing away from you.
+3. Plug the badge into your computer (or phone, I've tested on Android, not sure about iOS). 
+4. Hold bottom left button (red)
+5. Tap top left button (blue), then you can release the bottom left button.
+6. A drive called RP2350 should appear. 
+7. Drag `firmware-frozen-modules.uf2` into the drive. 
+8. The badge should reboot automatically with the new firmware. 
 
 ## Option 2: For development
 The previous option does not allow you to make changes easily, since the python files are compiled to bytecode and frozen into the firmware. This is more efficient for RAM and storage, but not ideal if you want to hack on it.
@@ -57,7 +62,7 @@ B: Undo
 
 A: Redo
 
-Start: Clear screen
+Start: Clear screen and randomize colors
 
 Select: Menu/Home 
 
