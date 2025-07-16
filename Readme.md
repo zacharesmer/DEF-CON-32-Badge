@@ -66,7 +66,7 @@ Select: Menu/Home
 # Adding other programs
 
 # WARNING
-Any program you put on the badge can execute arbitrary MicroPython code with no guardrails whatsoever. Someone could do naughty things like make your badge emulate a keyboard and mouse and generate arbitrary input to your computer over USB. So, please be careful. It's no more or less safe than downloading a different random uf2 and flashing your badge, but if I use the word "app" someone might get the idea there's any sandboxing whatsoever. There is not and you have been warned!
+Any program you put on the badge can execute arbitrary MicroPython code with no guardrails whatsoever. Someone could do naughty things like make your badge emulate a keyboard and mouse and generate input to your computer over USB. So, please be careful. It's no more or less safe than downloading a different random uf2 and flashing your badge, but if I use the word "app" someone might get the idea there's any sandboxing whatsoever. There is not and you have been warned!
 
 I've also used less-than-officially-sanctioned-for-rp2350 SD card compilation options, so don't trust this to keep your data uncorrupted. If there's anything important on your SD card, back it up! 
 
