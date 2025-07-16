@@ -78,19 +78,19 @@ The file should have a .py extension and be a valid Python module name: all lowe
 # Plans for the future and ideas if you want to contribute
 (A very non-exhaustive list, there is a lot that could be done!)
 
-[] Use the accelerometer to change the screen rotation
-[] Use the RTC to keep track of the actual date and time
-[] An IrDA messaging app with text instead of drawings
-[] Something to use the speaker, maybe a piano app? 
-[] Use the SAO port for something
-[] Lots more Neopixel animations
-[] Custom themes--I made a color chooser widget, it's just not used for anything yet
-[] Display images from a file on the screen (I think if you convert them to bitmaps using RGB565 colors, it should be easy to dump them into the framebuf, I just haven't tried yet)
-[] Decode more IR formats
-[] Make it possible to delete and rename recordings/files/directories from the IR remote app
-[] Add a way to display text in other sizes and fonts (this is a solved problem in the russ hughes st7789 driver and micropython nano gui, but I haven't investigated how they did it yet. Nano gui is probably most similar because it uses framebufs)
-[] literally any decently usable tools for creating layouts and UIs
-[] Make a nice interface for apps to opt into manually triggering screen redraws so they can have smoother animations
+- [] Use the accelerometer to change the screen rotation
+- [] Use the RTC to keep track of the actual date and time
+- [] An IrDA messaging app with text instead of drawings
+- [] Something to use the speaker, maybe a piano app? 
+- [] Use the SAO port for something
+- [] Lots more Neopixel animations
+- [] Custom themes--I made a color chooser widget, it's just not used for anything yet
+- [] Display images from a file on the screen (I think if you convert them to bitmaps using RGB565 colors, it should be easy to dump them into the framebuf, I just haven't tried yet)
+- [] Decode more IR formats
+- [] Make it possible to delete and rename recordings/files/directories from the IR remote app
+- [] Add a way to display text in other sizes and fonts (this is a solved problem in the russ hughes st7789 driver and micropython nano gui, but I haven't investigated how they did it yet. Nano gui is probably most similar because it uses framebufs)
+- [] literally any decently usable tools for creating layouts and UIs
+- [] Make a nice interface for apps to opt into manually triggering screen redraws so they can have smoother animations
 
 # Thank you
 Thanks to Entropic Engineering for making a very cool and fun piece of hardware. Additional credit for various helpful things, examples, tutorials, and prior art:
