@@ -72,7 +72,7 @@ class ST7789V:
         backlight=bc.DISPLAY_BL_PIN,
         manual_draw=False,
     ):
-        #
+        self.manual_draw = manual_draw
         self.frame_buf_bytes = bc.SCREEN_HEIGHT * bc.SCREEN_WIDTH * 2
         buf = bytearray(self.frame_buf_bytes)
         self.frame_buf = framebuf.FrameBuffer(
@@ -162,12 +162,13 @@ class ST7789V:
         self.dma3.active(True)
 
     def setup_DMA(self):
+        self.dma1 = rp2.DMA()
         mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] = (
-            0x1  # aborting the channel seems to help restart DMA without a full power cycle
+            0x1
+            << self.dma1.channel  # aborting the channel seems to help restart DMA without a full power cycle
         )
         while mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] != 0:
             continue
-        self.dma1 = rp2.DMA()
         self.dma1_ctrl = self.dma1.pack_ctrl(
             size=0,
             inc_write=False,
@@ -180,6 +181,10 @@ class ST7789V:
     # use this method to manually trigger a redraw if that's how your program is set up
     # this can be attached to an interrupt that fires every time the screen finishes drawing
     def draw_frame(self, *args):
+        if not self.manual_draw:
+            return
+        while self.dma1.active():
+            pass
         self.cs.off()
         # Put the next pixel at the beginning of the screen's display RAM
         self.send_command(_ST7789_RAMWR)

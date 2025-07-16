@@ -34,7 +34,7 @@ class DC32_Badge:
             theme = Theme(theme_dict)
         self.theme = theme
         # print(prefs)
-        self.screen = ST7789V()
+        self.screen = ST7789V(manual_draw=True)
         # might be None, which is handled in Touchscreen initialization
         x_calibration = prefs.get("x_calibration")
         y_calibration = prefs.get("y_calibration")

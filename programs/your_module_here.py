@@ -49,6 +49,7 @@ class Program:
             box_height=bc.SCREEN_HEIGHT - 100,
             fill=True,
         )
+        self.badge.screen.draw_frame()
         self.badge.animation = RainbowParty()
         while self.is_running:
             await asyncio.sleep(0)

@@ -179,6 +179,9 @@ class Program(MenuProgram):
                 self.refresh_recordings_from_current_file()
             elif self.mode == "Directory":
                 self.refresh_files_in_current_directory()
+        if self.mode == "Recording":
+            self.badge.screen.draw_frame()
+            return
         super().show()
 
     def refresh_files_in_current_directory(self):
@@ -260,6 +263,8 @@ class Program(MenuProgram):
             "Wating for a signal!", 10, 10, self.badge.theme.fg1
         )
         self.mode = "Recording"
+        self.show()
+        print("showed??")
         code = await self.badge.cir.receive_one_signal()
         print(f"recorded {code}")
         self.mode = "File"

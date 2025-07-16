@@ -136,6 +136,7 @@ class TextEntry:
                     left_position += self.key_width
                 left_position = 0
                 height += self.key_height
+        self.badge.screen.draw_frame()
 
     def letter_from_touch(self, t):
         x, y = t

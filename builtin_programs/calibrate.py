@@ -30,6 +30,7 @@ class Program:
                 fill=True,
             )
             self.badge.screen.fill_circle(x_px[i], y_px[i], 3, self.badge.theme.accent)
+            self.badge.screen.draw_frame()
             await asyncio.sleep(0.5)
             touch = None
             while touch is None:

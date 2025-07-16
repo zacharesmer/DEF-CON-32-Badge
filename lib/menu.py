@@ -91,24 +91,36 @@ class MenuProgram:
 
     def go_left(self, arg):
         # print("left")
-        new_idx = self.current_selection - self.column_elements
-        # print(new_idx)
-        if new_idx >= 0:
-            if new_idx < self.view_start:
-                self.view_start -= self.view_elements
-            self.current_selection = new_idx
-            self.show()
-            # print(self.current_selection)
+        first = True
+        last_press = time.ticks_ms()
+        while arg.value() == 0:
+            if first or time.ticks_diff(time.ticks_ms(), last_press) > 200:
+                first = False
+                last_press = time.ticks_ms()
+                new_idx = self.current_selection - self.column_elements
+                # print(new_idx)
+                if new_idx >= 0:
+                    if new_idx < self.view_start:
+                        self.view_start -= self.view_elements
+                    self.current_selection = new_idx
+                    self.show()
+                    # print(self.current_selection)
 
     def go_right(self, arg):
         print("right")
-        new_idx = self.current_selection + self.column_elements
-        if new_idx < len(self.options):
-            if new_idx >= self.view_start + self.view_elements:
-                self.view_start += self.view_elements
-            self.current_selection = new_idx
-            # print(self.current_selection)
-            self.show()
+        first = True
+        last_press = time.ticks_ms()
+        while arg.value() == 0:
+            if first or time.ticks_diff(time.ticks_ms(), last_press) > 200:
+                first = False
+                last_press = time.ticks_ms()
+                new_idx = self.current_selection + self.column_elements
+                if new_idx < len(self.options):
+                    if new_idx >= self.view_start + self.view_elements:
+                        self.view_start += self.view_elements
+                    self.current_selection = new_idx
+                    # print(self.current_selection)
+                    self.show()
 
     def select(self, arg):
         print(f"Selected {self.current_selection}")
@@ -147,6 +159,7 @@ class MenuProgram:
             if height > 240 - 15:
                 height = 30
                 left_margin += 150
+        self.badge.screen.draw_frame()
 
     async def run(self):
         self.setup_buttons()
