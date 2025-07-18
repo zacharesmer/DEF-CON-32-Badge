@@ -76,7 +76,7 @@ Tone_Dict = {
 class Buzzer:
     # Initialize a PWM channel
     def __init__(self, pin=bc.SPEAKER_OUT):
-        self.pwm = PWM(Pin(pin, mode=Pin.OUT))
+        self.pwm = PWM(Pin(pin, mode=Pin.OUT,))
         self.pwm.duty_u16(0)
 
     # Ordinary method

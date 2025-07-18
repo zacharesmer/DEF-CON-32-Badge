@@ -123,6 +123,8 @@ class DC32_Badge:
         except (OSError, ValueError) as e:
             print(f"Error loading preferences: {e}")
             print("making new empty file")
+            with open("preferences.json", "w") as prefs_file:
+                json.dump(prefs, prefs_file)
         return prefs
 
     def write_preferences(self, prefs):

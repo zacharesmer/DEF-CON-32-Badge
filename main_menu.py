@@ -23,6 +23,7 @@ class MainMenu(MenuProgram):
             MenuOption("Paint", modname="builtin_programs.paint"),
             MenuOption("Choose Theme", modname="builtin_programs.choose_theme"),
             MenuOption("Calibrate", modname="builtin_programs.calibrate"),
+            MenuOption("Rick Roll", modname="builtin_programs.play_song"),
         ]
         # and load any others listed in `external_programs.json`
         valid_identifier_exp = re.compile("^[A-Za-z_][A-Za-z0-9_.]*$")

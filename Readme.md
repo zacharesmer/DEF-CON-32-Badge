@@ -117,3 +117,4 @@ Thanks to Entropic Engineering for making a very cool and fun piece of hardware.
 - https://dmitry.gr/?r=06.%20Thoughts&proj=09.ComplexPioMachines
 - https://github.com/Wind-stormger/micropython-uasycio-buzzer
 - Dmitry Grinberg's original badge firmware, which is in Discord somewhere
+- https://antirez.com/news/143 for explaining how to play actual sounds!
