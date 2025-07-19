@@ -197,25 +197,25 @@ class _Chunk:
             self.size_read = self.size_read + len(dummy)
         return data
 
-    def readinto(self, buf):
-        """Read into the provided buffer
-        Return the number of bytes placed in the buffer
-        """
-        if self.closed:
-            raise ValueError("I/O operation on closed file")
-        if self.size_read >= self.chunksize:
-            return b""
-        # if size < 0:
-        #     size = self.chunksize - self.size_read
-        # if size > self.chunksize - self.size_read:
-        #     size = self.chunksize - self.size_read
-        bytes_read = self.file.readinto(buf)
-        self.size_read = self.size_read + bytes_read
-        if self.size_read == self.chunksize and self.align and (self.chunksize & 1):
-            dummy = self.file.read(1)
-            self.size_read = self.size_read + len(dummy)
-        # return data
-        return bytes_read
+    # def readinto(self, buf):
+    #     """Read into the provided buffer
+    #     Return the number of bytes placed in the buffer
+    #     """
+    #     if self.closed:
+    #         raise ValueError("I/O operation on closed file")
+    #     if self.size_read >= self.chunksize:
+    #         return b""
+    #     # if size < 0:
+    #     #     size = self.chunksize - self.size_read
+    #     # if size > self.chunksize - self.size_read:
+    #     #     size = self.chunksize - self.size_read
+    #     bytes_read = self.file.readinto(buf)
+    #     self.size_read = self.size_read + bytes_read
+    #     if self.size_read == self.chunksize and self.align and (self.chunksize & 1):
+    #         dummy = self.file.read(1)
+    #         self.size_read = self.size_read + len(dummy)
+    #     # return data
+    #     return bytes_read
 
     def skip(self):
         """Skip the rest of the chunk.
@@ -413,27 +413,27 @@ class Wave_read:
         )
         return data
 
-    def readframes_into(self, buf):
-        # length of buf is in bytes
-        nframes = len(buf) // self._sampwidth
-        if self._data_seek_needed:
-            self._data_chunk.seek(0, 0)
-            pos = self._soundpos * self._framesize
-            if pos:
-                self._data_chunk.seek(pos, 0)
-            self._data_seek_needed = 0
-        if nframes == 0:
-            return b""
-        bytes_read = self._data_chunk.readinto(buf)
-        # if self._sampwidth != 1 and sys.byteorder == "big":
-        #     data = _byteswap(data, self._sampwidth)
-        #     # TODO: implement this?
-        # if self._convert and data:
-        #     data = self._convert(data)
-        self._soundpos = self._soundpos + bytes_read // (
-            self._nchannels * self._sampwidth
-        )
-        return bytes_read
+    # def readframes_into(self, buf):
+    #     # length of buf is in bytes
+    #     nframes = len(buf) // self._sampwidth
+    #     if self._data_seek_needed:
+    #         self._data_chunk.seek(0, 0)
+    #         pos = self._soundpos * self._framesize
+    #         if pos:
+    #             self._data_chunk.seek(pos, 0)
+    #         self._data_seek_needed = 0
+    #     if nframes == 0:
+    #         return b""
+    #     bytes_read = self._data_chunk.readinto(buf)
+    #     # if self._sampwidth != 1 and sys.byteorder == "big":
+    #     #     data = _byteswap(data, self._sampwidth)
+    #     #     # TODO: implement this?
+    #     # if self._convert and data:
+    #     #     data = self._convert(data)
+    #     self._soundpos = self._soundpos + bytes_read // (
+    #         self._nchannels * self._sampwidth
+    #     )
+    #     return bytes_read
 
     #
     # Internal methods.
