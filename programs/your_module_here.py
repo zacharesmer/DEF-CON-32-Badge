@@ -31,6 +31,7 @@ class Program:
 
     async def run(self):
         self.is_running = True
+        self.badge.screen.frame_buf.fill(self.badge.theme.bg1)
         self.badge.screen.frame_buf.rect(
             40,
             40,
