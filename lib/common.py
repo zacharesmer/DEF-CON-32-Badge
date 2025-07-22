@@ -81,13 +81,33 @@ def lin_reg(x, y):
 def shitty_wrap_text(text, chars_wide):
     """
     There is a cpython library to do this well but I'm going to do it badly.
-    Completely ignores spaces and breaks words at random places
     badness >>>>>> 10,000
     """
-    return [
-        text[y - chars_wide : y]
-        for y in range(chars_wide, len(text) + chars_wide, chars_wide)
-    ]
+    output = []
+    line = []
+    line_length = 0
+    split_text = text.split()
+    for w in split_text:
+        # yay happy case
+        if line_length + len(w) < chars_wide:
+            line.append(w)
+            line_length += len(w) + 1
+        # it's called shitty wrap text for a reason; this is the reason. It doesn't break long words with no spaces
+        elif len(w) > chars_wide:
+            if line_length > 0:
+                output.append(" ".join(line))
+                line = []
+                line_length = 0
+            output.append(w)
+        else:
+            output.append(" ".join(line))
+            line = [w]
+            line_length = len(w) + 1
+    if line_length > 0:
+        output.append(" ".join(line))
+        line = []
+        line_length = 0
+    return output
 
 
 class Color:
