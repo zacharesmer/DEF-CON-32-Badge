@@ -23,7 +23,7 @@ class MainMenu(MenuProgram):
             MenuOption("Paint", modname="builtin_programs.paint"),
             MenuOption("Choose Theme", modname="builtin_programs.choose_theme"),
             MenuOption("Calibrate", modname="builtin_programs.calibrate"),
-            MenuOption("Web Browser", modname="builtin_programs.play_song"),
+            # MenuOption("Web Browser", modname="builtin_programs.play_song"),
         ]
         # and load any others listed in `external_programs.json`
         valid_identifier_exp = re.compile("^[A-Za-z_][A-Za-z0-9_.]*$")
@@ -68,8 +68,9 @@ class MainMenu(MenuProgram):
         # self.badge.right_button.irq(None)
         self.badge.screen.stop_continuous_refresh()
         self.badge.b_button.irq(None)
+        self.badge.fn_button.irq(None)
         self.setup_buttons()
-        # TODO: make this start the default animation instead
+        # TODO: make this start an animation defined in the preferences instead
         self.badge.neopixels.fill((0, 0, 0))
         os.chdir("/")
         print(f"Free: {gc.mem_free()}")
@@ -120,6 +121,9 @@ class MainMenu(MenuProgram):
 
     async def close(self):
         self.un_setup_buttons()
+        self.badge.screen.frame_buf.fill(self.badge.theme.bg1)
+        self.badge.screen.frame_buf.text("Loading...", 10, 10, self.badge.theme.fg1)
+        self.badge.screen.draw_frame()
 
     # the main event loop
     async def run(self):

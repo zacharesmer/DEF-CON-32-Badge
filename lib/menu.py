@@ -21,6 +21,9 @@ class MenuProgram:
         self.view_elements = self.column_elements * self.num_columns
         self.max_text_length = 16
         self.title = "Title"
+        self.title_color = self.badge.theme.fg4
+        self.default_color = self.badge.theme.fg1
+        self.background_color = self.badge.theme.bg1
 
     def setup_buttons(self):
         self.badge.up_button.irq(self.go_up, Pin.IRQ_FALLING)
@@ -131,14 +134,14 @@ class MenuProgram:
 
     def show(self):
         left_margin = 10
-        self.badge.screen.frame_buf.fill(self.badge.theme.bg1)
+        self.badge.screen.frame_buf.fill(self.background_color)
         max_title_length = 32
         if len(self.title) > max_title_length:
             display_title = f"...{self.title[len(self.title) - max_title_length:]}"
         else:
             display_title = self.title
         self.badge.screen.frame_buf.text(
-            display_title, left_margin, 10, self.badge.theme.fg4
+            display_title, left_margin, 10, self.title_color
         )
         # print the options
         height = 30
@@ -153,7 +156,7 @@ class MenuProgram:
                 opt.name[: self.max_text_length],
                 left_margin,
                 height,
-                opt.color if opt.color is not None else self.badge.theme.fg1,
+                opt.color if opt.color is not None else self.default_color,
             )
             height += 15
             if height > 240 - 15:
