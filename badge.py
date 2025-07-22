@@ -18,6 +18,7 @@ import json
 from other_hw.buzzer import Buzzer
 import os
 from lib.themes import Theme, builtin_themes
+from lib.error_box import ErrorBox
 
 
 class DC32_Badge:
@@ -83,19 +84,11 @@ class DC32_Badge:
             # print(os.listdir("sd"))
         except OSError as e:
             print(f"Error mounting SD card: {e}")
-            self.screen.fill(self.theme.bg1)
-            self.screen.text_in_box(
-                "Note: Something is wrong with the SD card, and it couldn't be mounted. :( Is it inserted correctly and formatted as FAT?",
-                10,
-                10,
-                self.theme.fg1,
-                self.theme.bg2,
-                text_width=300,
-                fill=True,
+            error_box = ErrorBox(
+                self,
+                "Something is wrong with the SD card, and it couldn't be mounted. :( Is it inserted correctly and formatted as FAT?",
             )
-            self.screen.frame_buf.text("Press A to dismiss", 10, 200, self.theme.fg2)
-            while self.a_button.value() != 0:
-                pass
+            error_box.display_error()
 
     def set_eyes(self, rgb):
         for p in self.eye_pixels:
