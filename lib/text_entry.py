@@ -24,20 +24,78 @@ class TextEntry:
         row2 = ["a", "s", "d", "f", "g", "h", "j", "k", "l", "OK"]
         row3 = ["^", "z", "x", "c", "v", "b", "n", "m", "_", "<"]
         self.rows = [row0, row1, row2, row3]
+        self.selected_key = [0, 0]
+        self.selection_made = False
         pass
 
     def setup_buttons(self):
         self.badge.b_button.irq(self.go_back, Pin.IRQ_FALLING)
+        self.badge.a_button.irq(self.select, Pin.IRQ_FALLING)
+        self.badge.left_button.irq(self.go_left, Pin.IRQ_FALLING)
+        self.badge.right_button.irq(self.go_right, Pin.IRQ_FALLING)
+        self.badge.up_button.irq(self.go_up, Pin.IRQ_FALLING)
+        self.badge.down_button.irq(self.go_down, Pin.IRQ_FALLING)
 
     def un_setup_buttons(self):
         self.badge.b_button.irq(None)
+        self.badge.a_button.irq(None)
+        self.badge.left_button.irq(None)
+        self.badge.right_button.irq(None)
+        self.badge.up_button.irq(None)
+        self.badge.down_button.irq(None)
 
     def go_back(self, arg):
-        # print("b")
+        print("b")
         self.is_running = False
 
-    # async def run(self):
-    #     pass
+    def select(self, arg):
+        print("a")
+        self.selection_made = True
+
+    def go_left(self, arg):
+        print("left")
+        first = True
+        last_press = time.ticks_ms()
+        while arg.value() == 0:
+            if first or time.ticks_diff(time.ticks_ms(), last_press) > 200:
+                first = False
+                last_press = time.ticks_ms()
+                self.selected_key[1] = (self.selected_key[1] - 1) % len(self.rows[0])
+                self.show_keyboard(keyboard=True)
+
+    def go_right(self, arg):
+        print("right")
+        first = True
+        last_press = time.ticks_ms()
+        while arg.value() == 0:
+            if first or time.ticks_diff(time.ticks_ms(), last_press) > 200:
+                first = False
+                last_press = time.ticks_ms()
+                self.selected_key[1] = (self.selected_key[1] + 1) % len(self.rows[0])
+                self.show_keyboard(keyboard=True)
+
+    def go_up(self, arg):
+        print("up")
+        # physically up on the screen, number goes down
+        first = True
+        last_press = time.ticks_ms()
+        while arg.value() == 0:
+            if first or time.ticks_diff(time.ticks_ms(), last_press) > 200:
+                first = False
+                last_press = time.ticks_ms()
+                self.selected_key[0] = (self.selected_key[0] - 1) % len(self.rows)
+                self.show_keyboard(keyboard=True)
+
+    def go_down(self, arg):
+        print("down")
+        first = True
+        last_press = time.ticks_ms()
+        while arg.value() == 0:
+            if first or time.ticks_diff(time.ticks_ms(), last_press) > 200:
+                first = False
+                last_press = time.ticks_ms()
+                self.selected_key[0] = (self.selected_key[0] + 1) % len(self.rows)
+                self.show_keyboard(keyboard=True)
 
     async def get_text(self):
         self.setup_buttons()
@@ -45,25 +103,27 @@ class TextEntry:
         self.is_running = True
         last_letter_at = time.ticks_ms()
         while self.is_running:
-            # print(f"running: {self.is_running}")
-            t = self.badge.touch.get_one_touch_in_pixels()
-            if t is not None:
-                if time.ticks_diff(time.ticks_ms(), last_letter_at) > 500:
-                    letter = self.letter_from_touch(t)
-                    if letter is not None:
-                        # print(letter)
-                        if letter == "^":
-                            self.caps = not self.caps
-                        elif letter == "<":
-                            self.text_entered = self.text_entered[:-1]
-                        elif letter == "OK":
-                            if len(self.text_entered) > 0:
-                                return self.text_entered
-                        else:
-                            if len(self.text_entered) < self.max_length:
-                                self.text_entered = f"{self.text_entered}{letter}"
-                        last_letter_at = time.ticks_ms()
-                        self.show_keyboard(keyboard=False)
+            if time.ticks_diff(time.ticks_ms(), last_letter_at) > 500:
+                t = self.badge.touch.get_one_touch_in_pixels()
+                if t is not None:
+                    self.set_selected_key_from_touch(t)
+                    last_letter_at = time.ticks_ms()
+            if self.selection_made:
+                self.selection_made = False
+                letter = self.rows[self.selected_key[0]][self.selected_key[1]]
+                if self.caps:
+                    letter = letter.upper()
+                if letter == "^":
+                    self.caps = not self.caps
+                elif letter == "<":
+                    self.text_entered = self.text_entered[:-1]
+                elif letter == "OK":
+                    if len(self.text_entered) > 0:
+                        return self.text_entered
+                else:
+                    if len(self.text_entered) < self.max_length:
+                        self.text_entered = f"{self.text_entered}{letter}"
+                self.show_keyboard(entered_text=True)
             await asyncio.sleep(0)
         self.exit()
 
@@ -115,20 +175,20 @@ class TextEntry:
         if keyboard:
             height = self.kb_start_height
             left_position = 0
-            for row in self.rows:
-                for key in [k.upper() if self.caps else k for k in row]:
-                    # self.badge.screen.frame_buf.rect(
-                    #     left_position + 1, height + 1, 30, 30, self.badge.theme.fg2
-                    # )
-                    # self.badge.screen.frame_buf.text(
-                    #     key, left_position + 12, height + 12, self.badge.theme.fg1
-                    # )
+            for row_i, row in enumerate(self.rows):
+                for key_i, key in enumerate(
+                    [k.upper() if self.caps else k for k in row]
+                ):
+                    if self.selected_key == [row_i, key_i]:
+                        box_color = self.badge.theme.accent
+                    else:
+                        box_color = self.badge.theme.fg2
                     self.badge.screen.text_in_box(
                         key,
                         left_position + 1,
                         height + 1,
                         self.badge.theme.fg1,
-                        self.badge.theme.fg2,
+                        box_color,
                         box_width=30,
                         box_height=30,
                         fill=False,
@@ -138,27 +198,23 @@ class TextEntry:
                 height += self.key_height
         self.badge.screen.draw_frame()
 
-    def letter_from_touch(self, t):
+    def set_selected_key_from_touch(self, t):
+        """check if touch is None before calling this"""
         x, y = t
+        # quit early if the touch was outside of the keyboard
         if (
             y < self.kb_start_height
             or y > self.kb_start_height + len(self.rows) * self.key_height
         ):
-            # print("1")
-            return None
-        # figure out which letter was touched, or None if it wasn't any
+            return
+        # figure out which letter was touched
         y_index = (y - self.kb_start_height) // self.key_height
         if y_index < len(self.rows) and y_index >= 0:
             x_index = x // self.key_width
             if x_index < len(self.rows[y_index]) and x_index >= 0:
-                # print("2")
-                letter = self.rows[y_index][x_index]
-                if self.caps:
-                    return letter.upper()
-                return letter
-                # return "a"
-        # print("3")
-        return None
+                self.selected_key = [y_index, x_index]
+                self.selection_made = True
+                return
 
 
 # bg_color = 0x00_00
