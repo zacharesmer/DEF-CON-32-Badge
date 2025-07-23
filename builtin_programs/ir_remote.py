@@ -129,11 +129,9 @@ class Program(FileBrowserProgram):
                 asyncio.create_task(self.record_new_code())
             elif selection.action == "Delete":
                 self.mode = "Delete Recording"
-                self.title = "Select a recording to delete"
                 self.show(refresh=True)
             elif selection.action == "Rename":
                 self.mode = "Rename Recording"
-                self.title = "Select a recording to rename"
                 self.show(refresh=True)
             elif selection.action == None:
                 print("no action")
@@ -150,16 +148,24 @@ class Program(FileBrowserProgram):
             super().select(arg)
 
     def show(self, refresh=False):
-        # if we're recording, return early so we don't draw any of the menu stuff
-        # just refresh the screen from the framebuf
-        if self.mode == "Recording":
-            self.badge.screen.draw_frame()
-            return
+        if refresh:
+            if (
+                self.mode == "File"
+                or self.mode == "Delete Recording"
+                or self.mode == "Rename Recording"
+            ):
+                self.refresh_file_contents()
+        else:
+            # if we're recording, return early so we don't draw any of the menu stuff
+            # just refresh the screen from the framebuf
+            if self.mode == "Recording":
+                self.badge.screen.draw_frame()
+                return
         super().show(refresh=refresh)
 
     def go_back(self, arg):
         print(f"Going back, current mode is {self.mode}")
-        if self.mode == "Delete Recording":
+        if self.mode == "Delete Recording" or self.mode == "Rename Recording":
             self.mode = "File"
         elif self.mode == "Recording":
             self.badge.cir.cancel = True
@@ -168,26 +174,36 @@ class Program(FileBrowserProgram):
         self.show(refresh=True)
 
     def refresh_file_contents(self):
-        self.title = self.open_filename
+        if self.mode == "File":
+            self.title = self.open_filename
+            self.title_color = self.default_title_color
+        elif self.mode == "Rename Recording":
+            self.title = "Select a recording to rename"
+            self.title_color = self.badge.theme.accent
+        elif self.mode == "Delete Recording":
+            self.title = "Select a recording to delete"
+            self.title_color = self.badge.theme.accent
+
         with open(f"{self.open_filename}", "r") as f:
             self.options = self.read_ir_file(f)
             # print(self.options)
-        self.options.append(
-            MenuOption(
-                "New Recording",
-                color=self.badge.theme.fg3,
-                ir_code=None,
-                action="Record",
+        if self.mode != "Rename Recording" and self.mode != "Delete Recording":
+            self.options.append(
+                MenuOption(
+                    "New Recording",
+                    color=self.badge.theme.fg3,
+                    ir_code=None,
+                    action="Record",
+                )
             )
-        )
-        self.options.append(
-            MenuOption(
-                "Delete Recording",
-                color=self.badge.theme.fg3,
-                ir_code=None,
-                action="Delete",
+            self.options.append(
+                MenuOption(
+                    "Delete Recording",
+                    color=self.badge.theme.fg3,
+                    ir_code=None,
+                    action="Delete",
+                )
             )
-        )
 
     # override
     async def make_new_file(self):

@@ -141,9 +141,10 @@ class FileBrowserProgram(MenuProgram):
         if refresh:
             self.current_selection = 0
             self.view_start = 0
-            if self.mode == "File":
-                self.refresh_file_contents()
-            elif (
+            # handle refreshing the file contents in the child class
+            # if self.mode == "File":
+            #     self.refresh_file_contents()
+            if (
                 self.mode == "Directory"
                 or self.mode == "Delete"
                 or self.mode == "Rename"
