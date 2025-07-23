@@ -20,6 +20,7 @@ class FileBrowserProgram(MenuProgram):
         delete_dir=True,
         rename_dir=True,
         rename_file=True,
+        move=True,
     ):
         super().__init__(badge)
         # which directory will this program use to store its data
@@ -36,6 +37,7 @@ class FileBrowserProgram(MenuProgram):
         self.delete_file_option = delete_file
         self.rename_dir_option = rename_dir
         self.rename_file_option = rename_file
+        self.move_option = move
         # maybe the SD card didn't work right, if it's not mounted just use flash
         try:
             os.chdir("sd")
@@ -63,7 +65,10 @@ class FileBrowserProgram(MenuProgram):
         self.new_dir_color = self.badge.theme.fg3
         self.rename_color = self.badge.theme.fg3
         self.delete_color = self.badge.theme.fg3
+        self.move_color = self.badge.theme.fg3
         self.cursor_color = self.badge.theme.accent
+        self.move_file_path = None
+        self.move_file_name = None
 
     async def run(self):
         self.show(refresh=True)
@@ -98,6 +103,9 @@ class FileBrowserProgram(MenuProgram):
                 # enter DeleteFile mode so you can select a directory and delete it
                 self.mode = "Rename"
                 self.show(refresh=True)
+            elif selection.filetype == _TYPE_MOVE:
+                self.mode = "Move"
+                self.show(refresh=True)
 
         elif self.mode == "Delete":
             if (
@@ -112,6 +120,23 @@ class FileBrowserProgram(MenuProgram):
                 or selection.filetype == _OS_TYPE_FILE
             ):
                 asyncio.create_task(self.rename(selection))
+
+        elif self.mode == "Move":
+            if (
+                selection.filetype == _OS_TYPE_DIR
+                or selection.filetype == _OS_TYPE_FILE
+            ):
+                self.move_file_path = os.getcwd()
+                self.move_file_name = selection.name
+                self.mode = "Choose Destination"
+                self.show(refresh=True)
+
+        elif self.mode == "Choose Destination":
+            if selection.filetype == _OS_TYPE_DIR:
+                os.chdir(selection.name)
+                self.show(refresh=True)
+            elif selection.filetype == _TYPE_MOVE_HERE:
+                asyncio.create_task(self.move_file())
 
         elif self.mode == "File":
             print(
@@ -131,6 +156,13 @@ class FileBrowserProgram(MenuProgram):
             self.mode = "Directory"
         elif self.mode == "Delete":
             self.mode = "Directory"
+        elif self.mode == "Move":
+            self.mode = "Directory"
+        elif self.mode == "Choose Destination":
+            if os.getcwd() != self.root_dir:
+                os.chdir("..")
+            else:
+                self.mode = "Move"
         self.show(refresh=True)
 
     # `refresh` controls whether the view will be reset and the selection reset to the 1st item.
@@ -148,6 +180,8 @@ class FileBrowserProgram(MenuProgram):
                 self.mode == "Directory"
                 or self.mode == "Delete"
                 or self.mode == "Rename"
+                or self.mode == "Move"
+                or self.mode == "Choose Destination"
             ):
                 self.refresh_directory_contents()
         super().show()
@@ -162,6 +196,12 @@ class FileBrowserProgram(MenuProgram):
             self.title_color = self.badge.theme.accent
         elif self.mode == "Rename":
             self.title = "Select something to rename"
+            self.title_color = self.badge.theme.accent
+        elif self.mode == "Move":
+            self.title = "Select something to move"
+            self.title_color = self.badge.theme.accent
+        elif self.mode == "Choose Destination":
+            self.title = "Select a destination"
             self.title_color = self.badge.theme.accent
         # add the names to a list of options, keep track of which one is selected
         # set the type so the OK button callback knows if we selected a file or directory or special option
@@ -185,6 +225,9 @@ class FileBrowserProgram(MenuProgram):
                     continue
                 elif self.mode == "Rename" and not self.rename_file_option:
                     continue
+                # only show directories when selecting a move destination
+                if self.mode == "Choose Destination":
+                    continue
                 else:
                     self.options.append(
                         MenuOption(fname, color=self.file_color, filetype=ftype)
@@ -198,7 +241,12 @@ class FileBrowserProgram(MenuProgram):
                     self.options.append(
                         MenuOption(fname, color=self.dir_color, filetype=ftype)
                     )
-        if self.mode != "Delete" and self.mode != "Rename":
+        if (
+            self.mode != "Delete"
+            and self.mode != "Rename"
+            and self.mode != "Move"
+            and self.mode != "Choose Destination"
+        ):
             print(f"Mode: {self.mode}")
             if self.create_file_option:
                 self.options.append(
@@ -228,7 +276,15 @@ class FileBrowserProgram(MenuProgram):
                         filetype=_TYPE_DELETE,
                     )
                 )
+            if self.move_option:
+                self.options.append(
+                    MenuOption("Move", color=self.move_color, filetype=_TYPE_MOVE)
+                )
 
+        if self.mode == "Choose Destination":
+            self.options.append(
+                MenuOption("Move Here", color=self.move_color, filetype=_TYPE_MOVE_HERE)
+            )
         # print(f"Options: {self.options}")
 
     def refresh_file_contents(self):
@@ -309,6 +365,29 @@ class FileBrowserProgram(MenuProgram):
         self.setup_buttons()
         self.show(refresh=True)
 
+    async def move_file(self):
+        """because of how the destination is selected we have already chdired into the destination before calling this"""
+        if self.move_file_name in os.listdir():
+            print(
+                f"There is already a file in that directory named {self.move_file_name}"
+            )
+            self.un_setup_buttons()
+            error_box = ErrorBox(
+                self.badge,
+                f"Failed to rename: there is already a file in that directory named {self.move_file_name}",
+            )
+            await error_box.display_error_async()
+            self.setup_buttons()
+        else:
+            print(
+                f"Renaming {self.move_file_path}/{self.move_file_name} to {self.move_file_name}"
+            )
+            os.rename(
+                f"{self.move_file_path}/{self.move_file_name}", f"{self.move_file_name}"
+            )
+        self.mode = "Directory"
+        self.show(refresh=True)
+
 
 _OS_TYPE_FILE = 0x8000
 _OS_TYPE_DIR = 0x4000
@@ -319,5 +398,7 @@ _TYPE_NEW_DIR = 0x4001
 # _TYPE_DELETE_DIR = 0x4002
 _TYPE_DELETE = 0x3000
 _TYPE_RENAME = 0x3001
+_TYPE_MOVE = 0x3002
+_TYPE_MOVE_HERE = 0x3003
 _TYPE_PARENT_DIR = 0x4003
 _TYPE_FAVORITES_DIR = 0x4004
