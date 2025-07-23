@@ -6,6 +6,7 @@ from lib.menu import MenuOption
 from lib.file_browser import FileBrowserProgram
 from lib.text_entry import TextEntry
 from lib.common import timings_from_nec
+from lib.yes_no_box import YesNoBox
 
 
 class Program(FileBrowserProgram):
@@ -39,7 +40,6 @@ class Program(FileBrowserProgram):
         line_number = 0
         for line in f:
             split_line = line.split()
-            line_number += 1
             if split_line[0] == "name:":
                 # print(split_line)
                 name = split_line[1]
@@ -72,6 +72,7 @@ class Program(FileBrowserProgram):
                             color=self.badge.theme.fg1,
                             ir_code=[int(i) for i in split_line[1:]],
                             action="Send",
+                            line_in_file=line_in_file,
                         )
                     )
                 except Exception as e:
@@ -107,6 +108,7 @@ class Program(FileBrowserProgram):
                                 color=self.badge.theme.fg1,
                                 ir_code=t,
                                 action="Send",
+                                line_in_file=line_in_file,
                             )
                         )
                     except Exception as e:
@@ -117,6 +119,7 @@ class Program(FileBrowserProgram):
                 # TODO: more formats go here
                 # elif decode_other_format:
                 #   make a menu option using the decoded timings
+            line_number += 1
 
         return output
 
@@ -204,6 +207,14 @@ class Program(FileBrowserProgram):
                     action="Delete",
                 )
             )
+            self.options.append(
+                MenuOption(
+                    "Rename Recording",
+                    color=self.badge.theme.fg3,
+                    ir_code=None,
+                    action="Rename",
+                )
+            )
 
     # override
     async def make_new_file(self):
@@ -211,7 +222,7 @@ class Program(FileBrowserProgram):
         name = await TextEntry(self.badge, 16, "File name:").get_text()
         if name is not None:
             with open(f"{name}.{self.file_extension}", "w") as f:
-                f.write("Filetype: IR signals file\nVersion: 1")
+                f.write("Filetype: IR signals file\nVersion: 1\n")
             print("made a file :)")
         self.setup_buttons()
         self.show(refresh=True)
@@ -252,21 +263,86 @@ class Program(FileBrowserProgram):
         self.show(refresh=True)
 
     async def delete_recording(self, which_recording):
-        print(f"Deleting recording {which_recording.name}")
-        # move the file somewhere temporarily
-        # open the temp file
-        # write each line from the temp file to the original file's location until we get to the recording to skip
-        # skip lines until the start of the next recording (line starts with "name:")
-        # write the rest of the file
-        # delete the temp file
+        self.un_setup_buttons()
+        yes_no_box = YesNoBox(self.badge, "Delete recording?")
+        answer = await yes_no_box.get_answer()
+        if answer:
+            print(f"Deleting recording {which_recording.name}")
+            # print("Old file:\n")
+            # with open(self.open_filename) as new_file:
+            #     for l in new_file:
+            #         print(l, end="")
+            # print("\n**********\n")
+            # move the file somewhere temporarily
+            tmp_filename = f"{self.open_filename}.tmp"
+            os.rename(self.open_filename, tmp_filename)
+            # open the temp file
+            with open(tmp_filename, "r") as tmp_file, open(
+                self.open_filename, "w"
+            ) as new_file:
+                line_number = 0
+                for line in tmp_file:
+                    # if we've found the recording to delete, skip lines until the next recording starts (or EOF)
+                    if line_number == which_recording.line_in_file:
+                        line = tmp_file.readline()
+                        line_number += 1
+                        while not line.startswith("name") and not line == "":
+                            line = tmp_file.readline()
+                            line_number += 1
+                        # this line is the first line from the next recording so we do want to copy it
+                        new_file.write(line)
+                    # otherwise just copy over the file
+                    else:
+                        new_file.write(line)
+                        line_number += 1
+            # clean up the temp file
+            os.remove(tmp_filename)
+            # print("New file:\n")
+            # with open(self.open_filename) as new_file:
+            #     for l in new_file:
+            #         print(l, end="")
+            # print("\n**********\n")
+        self.setup_buttons()
         self.mode = "File"
         self.show(refresh=True)
-        pass
 
     async def rename_recording(self, which_recording):
         # use a text input to get a new name
         # do the same as delete recording but just change the name
-        print(f"Renaming recording{which_recording} ({self.current_selection.name})")
+        self.un_setup_buttons()
+        text_entry = TextEntry(self.badge, max_length=16, prompt="Recording name:")
+        new_name = await text_entry.get_text()
+        # it'll be None if the text entry was cancelled
+        if new_name is not None:
+            print(f"Renaming recording{which_recording.name} to {new_name}")
+            # print("Old file:\n")
+            # with open(self.open_filename) as new_file:
+            #     for l in new_file:
+            #         print(l, end="")
+            # print("\n**********\n")
+            # move the file somewhere temporarily
+            tmp_filename = f"{self.open_filename}.tmp"
+            os.rename(self.open_filename, tmp_filename)
+            # open the temp file
+            with open(tmp_filename, "r") as tmp_file, open(
+                self.open_filename, "w"
+            ) as new_file:
+                line_number = 0
+                for line in tmp_file:
+                    # copy everything verbatim except the name of the renamed recording
+                    if line_number == which_recording.line_in_file:
+                        new_file.write(f"name: {new_name}\n")
+                    else:
+                        new_file.write(line)
+                    line_number += 1
+            # clean up the temp file
+            os.remove(tmp_filename)
+            # print("New file:\n")
+            # with open(self.open_filename) as new_file:
+            #     for l in new_file:
+            #         print(l, end="")
+            # print("\n**********\n")
+        self.setup_buttons()
         self.mode = "File"
         self.show(refresh=True)
         pass
