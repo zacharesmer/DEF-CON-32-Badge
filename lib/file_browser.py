@@ -140,7 +140,7 @@ class FileBrowserProgram(MenuProgram):
 
         elif self.mode == "File":
             print(
-                "Implement the in-file selection actions in your child class then call super().select(arg)"
+                "Implement the in-file selection actions in your child class, remember to call super().select(arg)"
             )
 
     def go_back(self, arg):
