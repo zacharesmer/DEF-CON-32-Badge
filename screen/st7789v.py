@@ -178,7 +178,7 @@ class ST7789V:
             ctrl=self.dma3_ctrl,
             trigger=False,
         )
-        while self.dma2.active() | self.dma3.active():
+        while self.dma2.active() or self.dma3.active():
             pass
 
     def setup_DMA(self):
@@ -197,9 +197,14 @@ class ST7789V:
             bswap=True,
         )
 
-    # use this method to manually trigger a redraw if that's how your program is set up
-    # this can be attached to an interrupt that fires every time the screen finishes drawing
     def draw_frame(self, *args):
+        """
+        Use this method to manually trigger a redraw if that's how your program is set up.
+        It can also be attached to an interrupt that fires every time the screen finishes drawing, but if you're
+        doing that you probably want to use the DMA auto-refresh.
+
+        Don't call this while the display is already refreshing or it explodes. It's supposed to wait...
+        """
         if not self.manual_draw:
             return
         while self.dma1.active():
@@ -243,6 +248,8 @@ class ST7789V:
         optionally provide which rotation to set (0 is default)
         """
         was_manual_draw = self.manual_draw
+        while self.dma1.active() or self.dma2.active() or self.dma3.active():
+            pass
         self.stop_continuous_refresh()
         if rotation is None:
             self.rotation = (self.rotation + 1) % len(_ROTATIONS)
@@ -256,6 +263,8 @@ class ST7789V:
             self.start_continuous_refresh()
         else:
             self.draw_frame()
+            while self.dma1.active():
+                pass
 
     # these are just convenience methods so I could test with the same API in the other driver, they basically forward arguments to the framebuf
     def fill(self, color):
