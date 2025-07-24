@@ -56,6 +56,11 @@ def color565(r, g, b):
     return (r & 0xF8) << 8 | (g & 0xFC) << 3 | b >> 3
 
 
+def rgba_to_565(r, g, b, a):
+    # TODO: this just ignores alpha, could implement doing something with it
+    return color565(r, g, b)
+
+
 def color565_to_rgb(color):
     r = color >> 8
     g = (color >> 3) & 0x3

@@ -35,6 +35,9 @@ _ST7789_MADCTL = const(b"\x36")
 _BLACK = const(0x0000)
 _WHITE = const(0xFFFF)
 
+# _ROTATIONS = (b"\x00", b"\x60", b"\xc0", b"\xa0")
+_ROTATIONS = (b"\x60", b"\xa0")
+
 # init tuple format (b'command', b'data', delay_ms)
 _ST7789_INIT_CMDS = const(
     (
@@ -71,8 +74,10 @@ class ST7789V:
         mosi=bc.DISPLAY_DO_PIN,
         backlight=bc.DISPLAY_BL_PIN,
         manual_draw=False,
+        rotation=1,
     ):
         self.manual_draw = manual_draw
+        self.rotation = rotation
         self.frame_buf_bytes = bc.SCREEN_HEIGHT * bc.SCREEN_WIDTH * 2
         buf = bytearray(self.frame_buf_bytes)
         self.frame_buf = framebuf.FrameBuffer(
@@ -110,12 +115,6 @@ class ST7789V:
         # make sure there's not a manual redraw in progress
         while self.dma1.active():
             pass
-        ## aborting all DMA channels should help restart DMA without a full power cycle
-        # mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] = (0x1 << self.dma2.channel) | (
-        #     0x1 << self.dma3.channel
-        # )
-        # while mem32[bc.DISPLAY_DMA_ABORT_ADDRESS] != 0:
-        #     continue
         # make a buffer with the data that dma3 will read from to update the config of dma1
         self.dma2_read_start = array.array("I", [uctypes.addressof(self.frame_buf)])
         self.dma2_ctrl = self.dma2.pack_ctrl(
@@ -164,6 +163,9 @@ class ST7789V:
         self.dma3.active(True)
 
     def stop_continuous_refresh(self):
+        """
+        Stops the DMA loop and blocks until neither DMA channel is active anymore
+        """
         if self.manual_draw:
             return
         self.manual_draw = True
@@ -234,6 +236,26 @@ class ST7789V:
         self.dc.on()  # just in case
         self.spi.write(data)
         self.cs.on()
+
+    def rotate(self, rotation=None):
+        """
+        for now just toggle between the two landscape options so I don't have to mess with the data in the framebuf
+        optionally provide which rotation to set (0 is default)
+        """
+        was_manual_draw = self.manual_draw
+        self.stop_continuous_refresh()
+        if rotation is None:
+            self.rotation = (self.rotation + 1) % len(_ROTATIONS)
+        else:
+            self.rotation = rotation
+
+        self.send_command(_ST7789_MADCTL)
+        self.send_argument(_ROTATIONS[self.rotation])
+
+        if not was_manual_draw:
+            self.start_continuous_refresh()
+        else:
+            self.draw_frame()
 
     # these are just convenience methods so I could test with the same API in the other driver, they basically forward arguments to the framebuf
     def fill(self, color):
