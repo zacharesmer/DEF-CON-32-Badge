@@ -22,35 +22,16 @@ class Program(FileBrowserProgram):
         )
         self.stop_drawing = False
         self.currently_drawing = False
-        self.drawing_task = None
-        self.hard_cancel_cb_ref = self.hard_cancel_cb
+        self.image_open = False
 
     def setup_image_buttons(self):
-        super().un_setup_buttons()
+        self.un_setup_buttons()
         self.badge.b_button.irq(self.hard_cancel, Pin.IRQ_FALLING, hard=True)
         self.badge.a_button.irq(self.select, Pin.IRQ_FALLING)
 
     def hard_cancel(self, arg):
         self.stop_drawing = True
-        micropython.schedule(self.hard_cancel_cb_ref, arg)
-
-    def hard_cancel_cb(self, arg):
-        self.mode = "File"
-        # time.sleep_ms(30)
-        self.badge.screen.rotate(0)
-        super().setup_buttons()
-        self.go_back(arg)
-
-    def go_back(self, arg):
-        if self.mode == "Showing":
-
-            self.mode = "File"
-            # self.stop_drawing
-            # while self.currently_drawing:
-            #     print(".", end="")
-            #     asyncio.sleep(0)
-            self.badge.screen.rotate(0)
-        super().go_back(arg)
+        self.image_open = False
 
     def select(self, arg):
         # super goes first so that when a file is selected it falls through to here and immediately gets shown
@@ -60,14 +41,16 @@ class Program(FileBrowserProgram):
                 self.badge.screen.rotate()
         elif self.mode == "File":
             self.mode = "Showing"
-            self.png_task = asyncio.create_task(self.show_png())
+            self.un_setup_buttons()
+            asyncio.create_task(self.show_png())
 
     @micropython.viper
     def decompress_and_draw(self: object, d: object):
         self.badge.screen.fill(self.badge.theme.bg1)
         self.badge.screen.draw_frame()
         height: int = int(min(self.height, bc.SCREEN_HEIGHT))
-        width: int = int(min(self.width, bc.SCREEN_WIDTH))
+        # TODO: some kind of check so it doesn't just draw off the screen if the image is too big
+        width: int = int(self.width)
         bpp: int = int(self.bytesPerPixel)
         x_start: int = int(self.x_start)
         y_start: int = int(self.y_start)
@@ -89,21 +72,68 @@ class Program(FileBrowserProgram):
         r: int = int(0)
         c: int = int(0)
         for r in range(height):  # for each scanline
+            if self.stop_drawing:
+                return
             d.readinto(filter_type_buf)  # first byte of scanline is filter type
             d.readinto(raw_line_buf)
-            for c in range(width * bpp):  # for each byte in scanline
-                if self.stop_drawing:
-                    return
-                last_line[c] = this_line[c]
-                if filter_type[0] == 0:  # None
+            if filter_type[0] == 0:  # None
+                for c in range(width * bpp):  # for each byte in scanline
+                    if self.stop_drawing:
+                        return
+                    last_line[c] = this_line[c]
                     this_line[c] = raw_line[c]
-                elif filter_type[0] == 1:  # Sub
+                    pixel[c % bpp] = this_line[c] & 0xFF
+                    if c % bpp == 0 and not c == 0:
+                        self.badge.screen.frame_buf.pixel(
+                            c // bpp + x_start,
+                            r + y_start,
+                            (
+                                (pixel[0] & 0xF8) << 8
+                                | (pixel[1] & 0xFC) << 3
+                                | pixel[2] >> 3
+                            ),
+                        )
+            elif filter_type[0] == 1:  # Sub
+                for c in range(width * bpp):  # for each byte in scanline
+                    if self.stop_drawing:
+                        return
+                    last_line[c] = this_line[c]
                     this_line[c] = (
                         raw_line[c] + (this_line[c - bpp] if c >= bpp else 0)
                     ) & 0xFF
-                elif filter_type[0] == 2:  # Up
+                    pixel[c % bpp] = this_line[c] & 0xFF
+                    if c % bpp == 0 and not c == 0:
+                        self.badge.screen.frame_buf.pixel(
+                            c // bpp + x_start,
+                            r + y_start,
+                            (
+                                (pixel[0] & 0xF8) << 8
+                                | (pixel[1] & 0xFC) << 3
+                                | pixel[2] >> 3
+                            ),
+                        )
+            elif filter_type[0] == 2:  # Up
+                for c in range(width * bpp):  # for each byte in scanline
+                    if self.stop_drawing:
+                        return
+                    last_line[c] = this_line[c]
                     this_line[c] = (raw_line[c] + (last_line[c] if r > 0 else 0)) & 0xFF
-                elif filter_type[0] == 3:  # Average
+                    pixel[c % bpp] = this_line[c] & 0xFF
+                    if c % bpp == 0 and not c == 0:
+                        self.badge.screen.frame_buf.pixel(
+                            c // bpp + x_start,
+                            r + y_start,
+                            (
+                                (pixel[0] & 0xF8) << 8
+                                | (pixel[1] & 0xFC) << 3
+                                | pixel[2] >> 3
+                            ),
+                        )
+            elif filter_type[0] == 3:  # Average
+                for c in range(width * bpp):  # for each byte in scanline
+                    if self.stop_drawing:
+                        return
+                    last_line[c] = this_line[c]
                     this_line[c] = (
                         raw_line[c]
                         + (
@@ -112,7 +142,22 @@ class Program(FileBrowserProgram):
                         )
                         // 2
                     ) & 0xFF
-                elif filter_type[0] == 4:  # Paeth
+                    pixel[c % bpp] = this_line[c] & 0xFF
+                    if c % bpp == 0 and not c == 0:
+                        self.badge.screen.frame_buf.pixel(
+                            c // bpp + x_start,
+                            r + y_start,
+                            (
+                                (pixel[0] & 0xF8) << 8
+                                | (pixel[1] & 0xFC) << 3
+                                | pixel[2] >> 3
+                            ),
+                        )
+            elif filter_type[0] == 4:  # Paeth
+                for c in range(width * bpp):  # for each byte in scanline
+                    if self.stop_drawing:
+                        return
+                    last_line[c] = this_line[c]
                     a = this_line[c - bpp] if (c >= bpp) else 0
                     b = last_line[c] if r > 0 else 0
                     c_pr = last_line[c - bpp] if r > 0 and c >= bpp else 0
@@ -127,37 +172,38 @@ class Program(FileBrowserProgram):
                     else:
                         Pr = c_pr
                     this_line[c] = (raw_line[c] + Pr) & 0xFF
-                else:
-                    raise Exception("unknown filter type: " + str(filter_type[0]))
-                pixel[c % bpp] = this_line[c] & 0xFF
-                if c % bpp == 0 and not c == 0:
-                    self.badge.screen.frame_buf.pixel(
-                        c // bpp + x_start,
-                        r + y_start,
-                        (
-                            (pixel[0] & 0xF8) << 8
-                            | (pixel[1] & 0xFC) << 3
-                            | pixel[2] >> 3
-                        ),
-                    )
-            if r % 5 == 0:
+                    pixel[c % bpp] = this_line[c] & 0xFF
+                    if c % bpp == 0 and not c == 0:
+                        self.badge.screen.frame_buf.pixel(
+                            c // bpp + x_start,
+                            r + y_start,
+                            (
+                                (pixel[0] & 0xF8) << 8
+                                | (pixel[1] & 0xFC) << 3
+                                | pixel[2] >> 3
+                            ),
+                        )
+            else:
+                raise Exception("unknown filter type: " + str(filter_type[0]))
+            if r % 4 == 0:
                 self.badge.screen.draw_frame()
         # print("Done")
 
-    # this is primarily from https://pyokagan.name/blog/2019-10-14-png/
+    # this is largely from https://pyokagan.name/blog/2019-10-14-png/
     # Changes:
     #  - inlined calculations of adjacent pixels
     #  - use deflate.DeflateIO instead of zlib because that's the only option in micropython
-    #  - but also it means we can stream the decoded pixels
+    #  - that's great for memory usage though, it means we can stream the decompressed data
+    #  - add viper type annotations
+    #  - turn it inside out and check the filter once for a slight speed boost at the cost of some repetition
     async def show_png(self):
-        # self.setup_image_buttons()
-        self.un_setup_buttons()
         self.badge.screen.fill(self.badge.theme.bg1)
         self.badge.screen.frame_buf.text("Loading...", 20, 20, self.badge.theme.fg1)
         self.badge.screen.draw_frame()
         self.stop_drawing = False
-        gc.collect()
         self.currently_drawing = True
+        self.image_open = True
+        gc.collect()
         try:
             # this is not ideal but there's not enough memory
             temp_file_name = f"{self.open_filename}.tmp"
@@ -191,26 +237,30 @@ class Program(FileBrowserProgram):
                     self.y_start = (bc.SCREEN_HEIGHT - self.height) // 2
                     # print(f"y_start : {y_start}")
                 if compm != 0:
-                    raise Exception("invalid compression method")
+                    raise Exception(f"Invalid compression method: {compm}")
                 if filterm != 0:
-                    raise Exception("invalid filter method")
+                    raise Exception(f"Invalid filter method: {filterm}")
                 if colort == 6:
                     self.bytesPerPixel = 4
                 elif colort == 2:
                     self.bytesPerPixel = 3
                 else:
-                    raise Exception(
-                        f"Invalid color space: {colort}. We only support truecolor with alpha"
-                    )
+                    raise Exception(f"Invalid color space: {colort}")
                 if bitd != 8:
-                    raise Exception("we only support a bit depth of 8")
+                    raise Exception(
+                        f"Invalid bit depth: {bitd}. Only supports a bit depth of 8"
+                    )
                 if interlacem != 0:
-                    raise Exception("we only support no interlacing")
+                    raise Exception(f"Does not support interlacing")
                 # i = 0
                 self.setup_image_buttons()
                 with open(temp_file_name, "rb") as tmp:
                     with DeflateIO(tmp, ZLIB) as d:
+                        start = time.ticks_ms()
                         self.decompress_and_draw(d)
+                        print(
+                            f"displayed image in {time.ticks_diff(time.ticks_ms(), start)}ms"
+                        )
                 self.badge.screen.draw_frame()
         except (Exception, MemoryError, OSError) as e:
             # raise e
@@ -218,16 +268,23 @@ class Program(FileBrowserProgram):
             print(e)
             eb = ErrorBox(self.badge, message=str(e.value))
             eb.display_error()
+            self.image_open = False
             self.mode = "Directory"
             self.setup_buttons()
             self.show()
         finally:
-            self.setup_buttons()
             self.currently_drawing = False
+            self.stop_drawing = False
             try:
                 os.remove(temp_file_name)
             except:
                 print(":/ couldn't remove temp file")
+        while self.image_open:
+            await asyncio.sleep(0)
+        self.setup_buttons()
+        self.badge.screen.rotate(0)
+        self.mode = "Directory"
+        self.show()
 
     def read_chunk(self, f):
         # Returns (chunk_type, chunk_data)
@@ -240,6 +297,12 @@ class Program(FileBrowserProgram):
         if chunk_expected_crc != chunk_actual_crc:
             raise Exception("chunk checksum failed")
         return chunk_type, chunk_data
+
+    async def exit(self):
+        print("??")
+        self.stop_drawing = True
+        self.image_open = False
+        await super().exit()
 
 
 _PngSignature = b"\x89PNG\r\n\x1a\n"
