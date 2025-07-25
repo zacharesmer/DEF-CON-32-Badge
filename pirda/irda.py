@@ -80,7 +80,6 @@ class IrDA_UART:
         while True:
             if self.rx_machine.rx_fifo() > 0:
                 return self.rx_machine.get()
-            # asyncio.sleep(0)
 
     def send_word(self, w):
         # print(f"sending {w:032b}")

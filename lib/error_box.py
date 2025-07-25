@@ -27,7 +27,7 @@ class ErrorBox:
         self.show()
         self.setup_buttons()
         while self.selection_made == False:
-            asyncio.sleep(0)
+            await asyncio.sleep(0)
         self.un_setup_buttons()
 
     # currently we need the regular blocking version of this for displaying errors outside of async functions (like in constructors and early setup)
