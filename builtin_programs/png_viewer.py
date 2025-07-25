@@ -54,9 +54,10 @@ class Program(FileBrowserProgram):
         bpp: int = int(self.bytesPerPixel)
         x_start: int = int(self.x_start)
         y_start: int = int(self.y_start)
-        last_line: ptr8 = ptr8(array("B", [0 for _ in range(width * bpp)]))
-        this_line: ptr8 = ptr8(array("B", [0 for _ in range(width * bpp)]))
-        raw_line_buf = array("B", [0 for _ in range(width * bpp)])
+        # hack to make 0 an object for the mpy-cross compiler
+        last_line: ptr8 = ptr8(array("B", [abs(0) for _ in range(width * bpp)]))
+        this_line: ptr8 = ptr8(array("B", [abs(0) for _ in range(width * bpp)]))
+        raw_line_buf = array("B", [abs(0) for _ in range(width * bpp)])
         raw_line: ptr8 = ptr8(raw_line_buf)
         pixel: ptr8 = ptr8(array("B", [0, 0, 0, 0]))
         filter_type_buf = array("B", [0])
