@@ -2,6 +2,8 @@
 A launcher and some programs for the DC32 badge. Highlights:
 
 - Universal IR remote
+- Wav file player (8 bit unsigned only, see below for an ffmpeg command to convert to this)
+- PNG viewer (8 bit per color RGB and attempts 8 bit per color RGBA but ignores the alpha part)
 - Drawing app with IR messaging
 - Blinky Lights
 
@@ -14,7 +16,7 @@ If you have added a PSRAM chip to your badge, there are uf2s to actually take ad
 
 If you have the PSRAM chip on your badge, use the "-psram" uf2 files.
 
-Note: Flashing new firmware will erase anything in the badge's flash memory (most of the time, if it's already holding micro python files it may not erase them). This includes the game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/).
+Note: Flashing new firmware will erase anything in the badge's flash memory (most of the time, if it's already holding micro python files it may not erase them). This includes the game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/). The process is exactly the same as the one described below, but using a different .uf2 file.
 
 ## Option 1: Easiest
 ![a picture of the def con badge, ears at the top, screen facing away. The four buttons on the back are highlighted: top left - blue, bottom left - red, top right - green, bottom right - pink](images/badgeback.jpg)
@@ -48,6 +50,31 @@ If you would like to add support for another protocol, please do! The file parsi
 
 # LED animations
 There are some built in animations, and more can be added in an extra_animations.py file. There is an example in this repo, and a file will also be generated if one does not exist when the Blinkenlights program is run. See Contributing.md for an explanation of how the animations work.
+
+# WAV audio player
+Browse and play .wav files from the "music" directory on your SD card. Must be mono 8 bit unsigned PCM, supported sample rates are:
+
+- 8000
+- 11,025
+- 16,000
+- 22,050
+
+To convert audio files to a usable format, you can use ffmpeg. Install it if you need to, and run:
+
+```
+ffmpeg -i your_source_file.mp3 -ar 22050 -ac 1 -acodec pcm_u8 -sample_fmt u8 name_of_output_file.wav
+```
+
+(ar = audio sampling rate, ac= audio channels)
+
+(Note: I tried making it play 16 bit signed and 44100 sample rate WAVs and it kiiiind of worked, but sounded worse than these options because it could barely keep up. )
+
+# PNG viewer
+Browse and view png images from the "images" directory on your SD card. Supports RGB and RGBA (ignores the alpha but does display the image) with 8 bit color depth. This should cover most common PNGs. 
+
+If the image is too large to fit on the screen, it gets scaled down by the smallest integer that makes it fit entirely on the screen (eg 1/1, 1/2, 1/3, 1/4...). The entire file still needs to be read and decoded, so large images will draw slowly. For best performance scale or crop images to 320 x 240 or smaller.
+
+Rotate the image once it has finished drawing by pressing the A button.
 
 # Paint app
 Draw on the screen and send your drawing to another person through the retro-futuristic magic of Infrared! 
@@ -95,16 +122,16 @@ It may be easiest to copy the example file `your_module_here.py` and edit it. Yo
 - [ ] Use the accelerometer to change the screen rotation
 - [ ] Use the RTC to keep track of the actual date and time
 - [ ] An IrDA messaging app with text instead of drawings
-- [ ] Something to use the speaker, maybe a piano app? 
+- [X] Something to use the speaker, maybe a piano app? 
 - [ ] Use the SAO port for something
 - [ ] Lots more Neopixel animations
 - [ ] Custom themes--I made a color chooser widget, it's just not used for anything yet
-- [ ] Display images from a file on the screen (I think if you convert them to bitmaps using RGB565 colors, it should be easy to dump them into the framebuf, I just haven't tried yet)
+- [X] Display images from a file on the screen
 - [ ] Decode more IR formats
-- [ ] Make it possible to delete and rename recordings/files/directories from the IR remote app
+- [X] Make it possible to delete and rename recordings/files/directories from the IR remote app
 - [ ] Add a way to display text in other sizes and fonts (this is a solved problem in the russ hughes st7789 driver and micropython nano gui, but I haven't investigated how they did it yet. Nano gui is probably most similar because it uses framebufs)
-- [ ] literally any decently usable tools for creating layouts and UIs
-- [ ] Make a nice interface for apps to opt into manually triggering screen redraws so they can have smoother animations
+- [ ] literally any decently usable framework for creating layouts and UIs, it's a bit hacked together at the moment
+- [X] Make a nice interface for apps to opt into manually triggering screen redraws so they can have smoother animations
 
 # Thank you
 Thanks to Entropic Engineering for making a very cool and fun piece of hardware. Additional credit for various helpful things, examples, tutorials, and prior art:
@@ -118,3 +145,4 @@ Thanks to Entropic Engineering for making a very cool and fun piece of hardware.
 - https://github.com/Wind-stormger/micropython-uasycio-buzzer
 - Dmitry Grinberg's original badge firmware, which is in Discord somewhere
 - https://antirez.com/news/143 for explaining how to play actual sounds!
+- https://pyokagan.name/blog/2019-10-14-png/ for a very helpful explanation of and example code for decoding PNGs in Python

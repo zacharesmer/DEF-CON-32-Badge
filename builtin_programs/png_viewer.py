@@ -46,14 +46,22 @@ class Program(FileBrowserProgram):
 
     @micropython.viper
     def decompress_and_draw(self: object, d: object):
+        """
+        reconstruct the stream of decompressed data into an image and draw it on the screen
+        uses about 3 * image width in pixels * bytes per pixel bytes of memory
+        """
+        # this all looks totally wack but it's like 10x faster than when it looked readable
+        # And errors in viper are... unforthcoming, so I don't want to change it much
         self.badge.screen.fill(self.badge.theme.bg1)
         self.badge.screen.draw_frame()
-        height: int = int(min(self.height, bc.SCREEN_HEIGHT))
-        # TODO: some kind of check so it doesn't just draw off the screen if the image is too big
+        height: int = int(self.height)
         width: int = int(self.width)
         bpp: int = int(self.bytesPerPixel)
+        scale_x: int = int(int(self.scale) * bpp)
+        scale_y: int = int(self.scale)
         x_start: int = int(self.x_start)
         y_start: int = int(self.y_start)
+        draw_line: bool = False
         # hack to make 0 an object for the mpy-cross compiler
         last_line: ptr8 = ptr8(array("B", [abs(0) for _ in range(width * bpp)]))
         this_line: ptr8 = ptr8(array("B", [abs(0) for _ in range(width * bpp)]))
@@ -75,8 +83,11 @@ class Program(FileBrowserProgram):
         for r in range(height):  # for each scanline
             if self.stop_drawing:
                 return
+            # filter type applies to the whole line
             d.readinto(filter_type_buf)  # first byte of scanline is filter type
             d.readinto(raw_line_buf)
+            # only draw every scale_y'th line
+            draw_line = r % scale_y == 0
             if filter_type[0] == 0:  # None
                 for c in range(width * bpp):  # for each byte in scanline
                     if self.stop_drawing:
@@ -84,10 +95,10 @@ class Program(FileBrowserProgram):
                     last_line[c] = this_line[c]
                     this_line[c] = raw_line[c]
                     pixel[c % bpp] = this_line[c] & 0xFF
-                    if c % bpp == 0 and not c == 0:
+                    if draw_line and c % scale_x == 0 and not c == 0:
                         self.badge.screen.frame_buf.pixel(
-                            c // bpp + x_start,
-                            r + y_start,
+                            c // scale_x + x_start,
+                            r // scale_y + y_start,
                             (
                                 (pixel[0] & 0xF8) << 8
                                 | (pixel[1] & 0xFC) << 3
@@ -103,10 +114,10 @@ class Program(FileBrowserProgram):
                         raw_line[c] + (this_line[c - bpp] if c >= bpp else 0)
                     ) & 0xFF
                     pixel[c % bpp] = this_line[c] & 0xFF
-                    if c % bpp == 0 and not c == 0:
+                    if draw_line and c % scale_x == 0 and not c == 0:
                         self.badge.screen.frame_buf.pixel(
-                            c // bpp + x_start,
-                            r + y_start,
+                            c // scale_x + x_start,
+                            r // scale_y + y_start,
                             (
                                 (pixel[0] & 0xF8) << 8
                                 | (pixel[1] & 0xFC) << 3
@@ -120,10 +131,10 @@ class Program(FileBrowserProgram):
                     last_line[c] = this_line[c]
                     this_line[c] = (raw_line[c] + (last_line[c] if r > 0 else 0)) & 0xFF
                     pixel[c % bpp] = this_line[c] & 0xFF
-                    if c % bpp == 0 and not c == 0:
+                    if draw_line and c % scale_x == 0 and not c == 0:
                         self.badge.screen.frame_buf.pixel(
-                            c // bpp + x_start,
-                            r + y_start,
+                            c // scale_x + x_start,
+                            r // scale_y + y_start,
                             (
                                 (pixel[0] & 0xF8) << 8
                                 | (pixel[1] & 0xFC) << 3
@@ -144,10 +155,10 @@ class Program(FileBrowserProgram):
                         // 2
                     ) & 0xFF
                     pixel[c % bpp] = this_line[c] & 0xFF
-                    if c % bpp == 0 and not c == 0:
+                    if draw_line and c % scale_x == 0 and not c == 0:
                         self.badge.screen.frame_buf.pixel(
-                            c // bpp + x_start,
-                            r + y_start,
+                            c // scale_x + x_start,
+                            r // scale_y + y_start,
                             (
                                 (pixel[0] & 0xF8) << 8
                                 | (pixel[1] & 0xFC) << 3
@@ -174,10 +185,10 @@ class Program(FileBrowserProgram):
                         Pr = c_pr
                     this_line[c] = (raw_line[c] + Pr) & 0xFF
                     pixel[c % bpp] = this_line[c] & 0xFF
-                    if c % bpp == 0 and not c == 0:
+                    if draw_line and c % scale_x == 0 and not c == 0:
                         self.badge.screen.frame_buf.pixel(
-                            c // bpp + x_start,
-                            r + y_start,
+                            c // scale_x + x_start,
+                            r // scale_y + y_start,
                             (
                                 (pixel[0] & 0xF8) << 8
                                 | (pixel[1] & 0xFC) << 3
@@ -206,13 +217,20 @@ class Program(FileBrowserProgram):
         self.image_open = True
         gc.collect()
         try:
-            # this is not ideal but there's not enough memory
+            # in which we basically use a file as swap space
+            # why am I doing this?
+            # the compressed data needs to be in a buffer so that DeflateIO can read it.
+            # BytesIO has to fit in memory, and some images are too big, so that's a no go.
+            # ideally I'd make my own stream class to take off the "IDAT" at the beginning
+            # of each chunk and spit out the data, but that's not possible.
+            # From the docs (https://docs.micropython.org/en/latest/library/io.html):
+            # "Note that for efficiency, MicroPython doesn’t provide abstract base classes
+            # corresponding to the hierarchy above, and it’s not possible to implement,
+            # or subclass, a stream class in pure Python."
             temp_file_name = f"{self.open_filename}.tmp"
             with open(self.open_filename, "rb") as f:
                 if f.read(len(_PngSignature)) != _PngSignature:
                     raise Exception("Invalid PNG Signature")
-                # what can I do so this is not all in memory at once?
-                # chunks = []
                 with open(temp_file_name, "wb") as temp_file:
                     while True:
                         chunk_type, chunk_data = self.read_chunk(f)
@@ -228,15 +246,23 @@ class Program(FileBrowserProgram):
                     struct.unpack(">IIBBBBB", IHDR_data)
                 )
                 print(f"Width {self.width}, height {self.height}")
+                # scale the image so it fits on the screen. Can only handle integer divisors, 1/1, 1/2, 1/3, etc.
+                # Realistically past like 1/4th it'll probably be painfully slow to draw the image
+                self.scale = 1
+                while True:
+                    if (
+                        self.width // self.scale <= bc.SCREEN_WIDTH
+                        and self.height // self.scale <= bc.SCREEN_HEIGHT
+                    ):
+                        break
+                    self.scale += 1
                 # center the image
                 self.x_start = 0
                 self.y_start = 0
-                if self.width < bc.SCREEN_WIDTH:
-                    self.x_start = (bc.SCREEN_WIDTH - self.width) // 2
-                    # print(f"x_start : {x_start}")
-                if self.height < bc.SCREEN_HEIGHT:
-                    self.y_start = (bc.SCREEN_HEIGHT - self.height) // 2
-                    # print(f"y_start : {y_start}")
+                if self.width // self.scale < bc.SCREEN_WIDTH:
+                    self.x_start = (bc.SCREEN_WIDTH - self.width // self.scale) // 2
+                if self.height // self.scale < bc.SCREEN_HEIGHT:
+                    self.y_start = (bc.SCREEN_HEIGHT - self.height // self.scale) // 2
                 if compm != 0:
                     raise Exception(f"Invalid compression method: {compm}")
                 if filterm != 0:
@@ -253,7 +279,6 @@ class Program(FileBrowserProgram):
                     )
                 if interlacem != 0:
                     raise Exception(f"Does not support interlacing")
-                # i = 0
                 self.setup_image_buttons()
                 with open(temp_file_name, "rb") as tmp:
                     with DeflateIO(tmp, ZLIB) as d:
@@ -263,6 +288,7 @@ class Program(FileBrowserProgram):
                             f"displayed image in {time.ticks_diff(time.ticks_ms(), start)}ms"
                         )
                 self.badge.screen.draw_frame()
+        # show a nice error on the badge
         except (Exception, MemoryError, OSError) as e:
             # raise e
             self.un_setup_buttons()
