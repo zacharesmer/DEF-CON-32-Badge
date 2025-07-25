@@ -62,92 +62,87 @@ class Program(FileBrowserProgram):
             self.mode = "Showing"
             self.png_task = asyncio.create_task(self.show_png())
 
-    def decompress_and_draw(self, d):
+    @micropython.viper
+    def decompress_and_draw(self: object, d: object):
         self.badge.screen.fill(self.badge.theme.bg1)
         self.badge.screen.draw_frame()
-        last_line = array("B", [0 for _ in range(self.width * self.bytesPerPixel)])
-        this_line = array("B", [0 for _ in range(self.width * self.bytesPerPixel)])
-        raw_line = array("B", [0 for _ in range(self.width * self.bytesPerPixel)])
-        pixel = [0, 0, 0, 0]
-        for r in range(self.height):  # for each scanline
-            # filter_type = int.from_bytes(d.read(1))  # first byte of scanline is filter type
-            filter_type = d.read(1)  # first byte of scanline is filter type
-            # print(filter_type)
-            d.readinto(raw_line)
-            for c in range(
-                self.width * self.bytesPerPixel
-            ):  # for each byte in scanline
+        height: int = int(min(self.height, bc.SCREEN_HEIGHT))
+        width: int = int(min(self.width, bc.SCREEN_WIDTH))
+        bpp: int = int(self.bytesPerPixel)
+        x_start: int = int(self.x_start)
+        y_start: int = int(self.y_start)
+        last_line: ptr8 = ptr8(array("B", [0 for _ in range(width * bpp)]))
+        this_line: ptr8 = ptr8(array("B", [0 for _ in range(width * bpp)]))
+        raw_line_buf = array("B", [0 for _ in range(width * bpp)])
+        raw_line: ptr8 = ptr8(raw_line_buf)
+        pixel: ptr8 = ptr8(array("B", [0, 0, 0, 0]))
+        filter_type_buf = array("B", [0])
+        filter_type: ptr8 = ptr8(filter_type_buf)
+        a: int = int(0)
+        b: int = int(0)
+        c_pr: int = int(0)
+        p: int = int(0)
+        pa: int = int(0)
+        pb: int = int(0)
+        pc: int = int(0)
+        Pr: int = int(0)
+        r: int = int(0)
+        c: int = int(0)
+        for r in range(height):  # for each scanline
+            d.readinto(filter_type_buf)  # first byte of scanline is filter type
+            d.readinto(raw_line_buf)
+            for c in range(width * bpp):  # for each byte in scanline
                 if self.stop_drawing:
                     return
                 last_line[c] = this_line[c]
-                # for i in range(bytesPerPixel):
-                Filt_x = raw_line[c]
-                if filter_type == b"\x00":  # None
-                    Recon_x = Filt_x
-                elif filter_type == b"\x01":  # Sub
-                    Recon_x = Filt_x + (
-                        this_line[c - self.bytesPerPixel]
-                        if c >= self.bytesPerPixel
-                        else 0
-                    )
-                elif filter_type == b"\x02":  # Up
-                    Recon_x = Filt_x + (last_line[c] if r > 0 else 0)
-                elif filter_type == b"\x03":  # Average
-                    Recon_x = (
-                        Filt_x
+                if filter_type[0] == 0:  # None
+                    this_line[c] = raw_line[c]
+                elif filter_type[0] == 1:  # Sub
+                    this_line[c] = (
+                        raw_line[c] + (this_line[c - bpp] if c >= bpp else 0)
+                    ) & 0xFF
+                elif filter_type[0] == 2:  # Up
+                    this_line[c] = (raw_line[c] + (last_line[c] if r > 0 else 0)) & 0xFF
+                elif filter_type[0] == 3:  # Average
+                    this_line[c] = (
+                        raw_line[c]
                         + (
-                            (
-                                this_line[c - self.bytesPerPixel]
-                                if c >= self.bytesPerPixel
-                                else 0
-                            )
+                            (this_line[c - bpp] if c >= bpp else 0)
                             + (last_line[c] if r > 0 else 0)
                         )
                         // 2
-                    )
-                elif filter_type == b"\x04":  # Paeth
-                    a = (
-                        this_line[c - self.bytesPerPixel]
-                        if c >= self.bytesPerPixel
-                        else 0
-                    )
+                    ) & 0xFF
+                elif filter_type[0] == 4:  # Paeth
+                    a = this_line[c - bpp] if (c >= bpp) else 0
                     b = last_line[c] if r > 0 else 0
-                    c_pr = (
-                        last_line[c - self.bytesPerPixel]
-                        if r > 0 and c >= self.bytesPerPixel
-                        else 0
-                    )
+                    c_pr = last_line[c - bpp] if r > 0 and c >= bpp else 0
                     p = a + b - c_pr
-                    pa = abs(p - a)
-                    pb = abs(p - b)
-                    pc = abs(p - c_pr)
+                    pa = int(abs(p - a))
+                    pb = int(abs(p - b))
+                    pc = int(abs(p - c_pr))
                     if pa <= pb and pa <= pc:
                         Pr = a
                     elif pb <= pc:
                         Pr = b
                     else:
                         Pr = c_pr
-                    Recon_x = Filt_x + Pr
+                    this_line[c] = (raw_line[c] + Pr) & 0xFF
                 else:
-                    raise Exception("unknown filter type: " + str(filter_type))
-                this_line[c] = Recon_x & 0xFF
-                pixel[c % self.bytesPerPixel] = Recon_x & 0xFF
-                if c % self.bytesPerPixel == 0 and not c == 0:
-                    # if self.bytesPerPixel == 4:
-                    #     color = rgba_to_565(*pixel[:])
-                    # elif self.bytesPerPixel == 3:
-                    # color = color565(*pixel[:3])
+                    raise Exception("unknown filter type: " + str(filter_type[0]))
+                pixel[c % bpp] = this_line[c] & 0xFF
+                if c % bpp == 0 and not c == 0:
                     self.badge.screen.frame_buf.pixel(
-                        c // self.bytesPerPixel + self.x_start,
-                        r + self.y_start,
+                        c // bpp + x_start,
+                        r + y_start,
                         (
                             (pixel[0] & 0xF8) << 8
                             | (pixel[1] & 0xFC) << 3
                             | pixel[2] >> 3
                         ),
                     )
-            if r % 2 == 0:
+            if r % 5 == 0:
                 self.badge.screen.draw_frame()
+        # print("Done")
 
     # this is primarily from https://pyokagan.name/blog/2019-10-14-png/
     # Changes:
@@ -218,6 +213,7 @@ class Program(FileBrowserProgram):
                         self.decompress_and_draw(d)
                 self.badge.screen.draw_frame()
         except (Exception, MemoryError, OSError) as e:
+            # raise e
             self.un_setup_buttons()
             print(e)
             eb = ErrorBox(self.badge, message=str(e.value))
