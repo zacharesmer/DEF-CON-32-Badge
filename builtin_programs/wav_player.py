@@ -38,6 +38,15 @@ class Program(FileBrowserProgram):
         self.badge.b_button.irq(self.stop_playing, Pin.IRQ_FALLING, hard=True)
         self.badge.up_button.irq(self.vol_up, Pin.IRQ_FALLING, hard=True)
         self.badge.down_button.irq(self.vol_down, Pin.IRQ_FALLING, hard=True)
+        ## just for tuning
+        # self.badge.left_button.irq(self.delay_plus, Pin.IRQ_FALLING, hard=True)
+        # self.badge.right_button.irq(self.delay_minus, Pin.IRQ_FALLING, hard=True)
+
+    # def delay_plus(self, arg):
+    #     self.dac.playback_wait_us += 1
+
+    # def delay_minus(self, arg):
+    #     self.dac.playback_wait_us -= 1
 
     def un_setup_playback_buttons(self):
         # the same buttons are all used in the parent class

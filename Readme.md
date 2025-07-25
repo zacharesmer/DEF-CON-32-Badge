@@ -1,4 +1,6 @@
 # DEF CON 32 Badge MicroPython Firmware
+![screenshot of the main menu with options IR Remote, Blinkenlights, Paint, Choose Theme, Calibrate, Wav Player, PNG Viewer, and Example](images/screenshots/screenshot_0.png)
+
 A launcher and some programs for the DC32 badge. Highlights:
 
 - Universal IR remote
@@ -9,74 +11,55 @@ A launcher and some programs for the DC32 badge. Highlights:
 
 It's all written in Micropython and the drivers use the peripherals to go fast, so no need to compile extra C modules unless you add something that requires it. 
 
-![the def con 32 badge in pink lighting with "hack the planet" in handwriting on the screen](images/htp.jpg)
-
-# Installing
-If you have added a PSRAM chip to your badge, there are uf2s to actually take advantage of it (as much as micro python can, anyway). If you don't have that and you're interested, get yourself a APS6404L-3SQR-SN or similar and stick it in the blank spot next to the D-Pad (hardware schematic is on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/)). 
-
-If you have the PSRAM chip on your badge, use the "-psram" uf2 files.
-
-Note: Flashing new firmware will erase anything in the badge's flash memory (most of the time, if it's already holding micro python files it may not erase them). This includes the game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/). The process is exactly the same as the one described below, but using a different .uf2 file.
-
-## Option 1: Easiest
-![a picture of the def con badge, ears at the top, screen facing away. The four buttons on the back are highlighted: top left - blue, bottom left - red, top right - green, bottom right - pink](images/badgeback.jpg)
-
-1. Download [firmware-frozen-modules.uf2](compiled%20firmware/firmware-frozen-modules.uf2) (in the `compiled firmware` folder)
-2. Hold the badge ears up with the screen facing away from you.
-3. Plug the badge into your computer (or phone, I've tested on Android, not sure about iOS). 
-4. Hold bottom left button (red, Bootsel)
-5. Tap top left button (blue, Reset)
-6. A drive called RP2350 should appear. 
-7. Drag `firmware-frozen-modules.uf2` into the drive. 
-8. The badge should reboot automatically with the new firmware. 
-
-## Option 2: For development
-Option 1 does not allow you to make changes easily, since the python files are compiled to bytecode and frozen into the firmware. This is more efficient for RAM and storage, but not ideal if you want to hack on it.
-
-To get the files into the flash, do the same steps as above, but use the file `firmware-empty.uf2`. This is just plain old micropython plus the SD card library. I'm pretty sure you can also use fully vanilla MicroPython and the actual SDCard file from [[here](https://github.com/micropython/micropython-lib/blob/f95568da431c6506354adb93343206c04a94dc11/micropython/drivers/storage/sdcard/sdcard.py)].
-
-Then using mpremote, Thonny, VSCode with MicroPico, or something else, copy everything listed in manifest.py over to the badge. Restart it and main.py should run (or you may have to run it manually if the program you're using pauses the execution). 
-
-(I found it helpful to rename `main.py` when actively working on this so it wouldn't automatically run. That way, resetting the badge gave me a chance to recover if a change was making it crash or freeze.)
-
-See additional information about building your own uf2 in [Contributing.md](Contributing.md)
+[How to install](#installing)
 
 # IR Remote
+
+![screenshot of an IR remote for an LG TV with options up, down, left, right, power etc. At the end there are also options New Recording, Delete Recording, and Rename Recording](images/screenshots/screenshot_3.png)
+
 Use your badge as a TV remote! Currently it can record and replay raw signals, and send NEC and NECext. This should cover the majority of recordings in the [IrDB](https://github.com/Lucaslhm/Flipper-IRDB), but not all. 
 
 It tries to save and read files to/from an `ir_recordings` folder on the SD card, but it will use flash memory if an SD card is not detected.
 
 If you would like to add support for another protocol, please do! The file parsing is a little messy but I left some comments in `read_ir_file.py` about where to add new protocols. The actual decoding logic for NEC is in `lib.py` if you want an example of that as well.
 
-# LED animations
-There are some built in animations, and more can be added in an extra_animations.py file. There is an example in this repo, and a file will also be generated if one does not exist when the Blinkenlights program is run. See Contributing.md for an explanation of how the animations work.
-
 # WAV audio player
-Browse and play .wav files from the "music" directory on your SD card. Must be mono 8 bit unsigned PCM, supported sample rates are:
+![screenshot of an audio player titled Now Playing: rick_astley.wav, 20 seconds into a 3:28 long song](images/screenshots/screenshot_4.png)
+
+Browse and play .wav files from the "music" directory on your SD card. Use the up and down buttons to control the volume.
+
+It can play mono 8 bit unsigned PCM wav files. 
+
+Supported sample rates:
 
 - 8000
 - 11,025
 - 16,000
 - 22,050
 
-To convert audio files to a usable format, you can use ffmpeg. Install it if you need to, and run:
+To convert audio files to a usable format, you can use ffmpeg:
 
 ```
-ffmpeg -i your_source_file.mp3 -ar 22050 -ac 1 -acodec pcm_u8 -sample_fmt u8 name_of_output_file.wav
+ffmpeg -i your_source_file.mp3 -ar 22050 -ac 1 -acodec pcm_u8 -sample_fmt u8 your_output_file.wav
 ```
 
 (ar = audio sampling rate, ac= audio channels)
 
-(Note: I tried making it play 16 bit signed and 44100 sample rate WAVs and it kiiiind of worked, but sounded worse than these options because it could barely keep up. )
+You can also export a WAV file from audacity, just make sure "channels" is mono, sample rate is one of the listed sample rates, and "encoding" is Unsigned 8-bit PCM. 
+
+(Note: I tried making the badge play 16 bit signed and 44100 sample rate WAVs and it kiiiind of worked, but sounded worse than these options because it could barely keep up, and it uses a lot of space for no particular benefit.)
+
 
 # PNG viewer
-Browse and view png images from the "images" directory on your SD card. Supports RGB and RGBA (ignores the alpha but does display the image) with 8 bit color depth. This should cover most common PNGs. 
+Browse and view png images from the "images" directory on your SD card. Rotate the image once it has finished drawing by pressing the A button.
 
 If the image is too large to fit on the screen, it gets scaled down by the smallest integer that makes it fit entirely on the screen (eg 1/1, 1/2, 1/3, 1/4...). The entire file still needs to be read and decoded, so large images will draw slowly. For best performance scale or crop images to 320 x 240 or smaller.
 
-Rotate the image once it has finished drawing by pressing the A button.
+It can display RGB and RGBA (ignores the alpha but does display the image) with 8 bit color depth. This should cover most common PNGs. 
 
 # Paint app
+![the def con 32 badge in pink lighting with "hack the planet" in handwriting on the screen](images/htp.jpg)
+
 Draw on the screen and send your drawing to another person through the retro-futuristic magic of Infrared! 
 
 (note: this app uses IrDA SIR and is not compatible with the Flipper or other universal remotes)
@@ -94,6 +77,40 @@ A: Redo
 Start: Clear screen and randomize colors
 
 Select: Menu/Home 
+
+# LED animations
+There are some built in animations, and more can be added in an extra_animations.py file. There is an example in this repo, and a file will also be generated if one does not exist when the Blinkenlights program is run. See Contributing.md for an explanation of how the animations work.
+
+
+# Installing
+If you have added a PSRAM chip to your badge, there are uf2s to actually take advantage of it (as much as micro python can, anyway). If you don't have that and you're interested, get yourself a APS6404L-3SQR-SN or similar and stick it in the blank spot next to the D-Pad (hardware schematic is on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/)). 
+
+If you have the PSRAM chip on your badge, use the "-psram" uf2 files.
+
+Note: Flashing new firmware will erase anything in the badge's flash memory (most of the time, if it's already holding micro python files it may not erase them). This includes the game's save file if it's not stored to the SD card. To reinstall the default firmware, you will need to flash another uf2. There are copies of the original badge firmware and the original contents of the SD card on the DEF CON media server [here](https://media.defcon.org/DEF%20CON%2032/DEF%20CON%2032%20badge/). The process is exactly the same as the one described below, but using a different .uf2 file.
+
+## Method 1: Easiest
+![a picture of the def con badge, ears at the top, screen facing away. The four buttons on the back are highlighted: top left - blue, bottom left - red, top right - green, bottom right - pink](images/badgeback.jpg)
+
+1. Download [firmware-frozen-modules.uf2](compiled%20firmware/firmware-frozen-modules.uf2) (in the `compiled firmware` folder)
+2. Hold the badge ears up with the screen facing away from you.
+3. Plug the badge into your computer (or phone, I've tested on Android, not sure about iOS). 
+4. Hold bottom left button (red, Bootsel)
+5. Tap top left button (blue, Reset)
+6. A drive called RP2350 should appear. 
+7. Drag `firmware-frozen-modules.uf2` into the drive. 
+8. The badge should reboot automatically with the new firmware. 
+
+## Method 2: For development
+Option 1 does not allow you to make changes easily, since the python files are compiled to bytecode and frozen into the firmware. This is more efficient for RAM and storage, but not ideal if you want to hack on it.
+
+To get the files into the flash, do the same steps as above, but use the file `firmware-empty.uf2`. This is just plain old micropython plus the SD card library. I'm pretty sure you can also use fully vanilla MicroPython and the actual SDCard file from [[here](https://github.com/micropython/micropython-lib/blob/f95568da431c6506354adb93343206c04a94dc11/micropython/drivers/storage/sdcard/sdcard.py)].
+
+Then using mpremote, Thonny, VSCode with MicroPico, or something else, copy everything listed in manifest.py over to the badge. Restart it and main.py should run (or you may have to run it manually if the program you're using pauses the execution). 
+
+(I found it helpful to rename `main.py` when actively working on this so it wouldn't automatically run. That way, resetting the badge gave me a chance to recover if a change was making it crash or freeze.)
+
+See additional information about building your own uf2 in [Contributing.md](Contributing.md)
 
 # Adding other programs
 
@@ -122,7 +139,8 @@ It may be easiest to copy the example file `your_module_here.py` and edit it. Yo
 - [ ] Use the accelerometer to change the screen rotation
 - [ ] Use the RTC to keep track of the actual date and time
 - [ ] An IrDA messaging app with text instead of drawings
-- [X] Something to use the speaker, maybe a piano app? 
+- [X] Something to use the speaker
+- [ ] A piano app
 - [ ] Use the SAO port for something
 - [ ] Lots more Neopixel animations
 - [ ] Custom themes--I made a color chooser widget, it's just not used for anything yet
@@ -144,5 +162,5 @@ Thanks to Entropic Engineering for making a very cool and fun piece of hardware.
 - https://dmitry.gr/?r=06.%20Thoughts&proj=09.ComplexPioMachines
 - https://github.com/Wind-stormger/micropython-uasycio-buzzer
 - Dmitry Grinberg's original badge firmware, which is in Discord somewhere
-- https://antirez.com/news/143 for explaining how to play actual sounds!
+- https://antirez.com/news/143 for explaining how to play actual sounds beyond square waves!
 - https://pyokagan.name/blog/2019-10-14-png/ for a very helpful explanation of and example code for decoding PNGs in Python

@@ -9,15 +9,14 @@ _MIDPOINT = 65536 // 2 - 1
 
 class ShittyDAC:
     u8_frame_rate_adjustments = {
-        ## this does not reliably produce accurate speed
-        ## but it works surprisingly well so hey whatever
+        ## these are pretty close to correct on my badge
         ## framerate: (playback_wait_us, playback_skip)
-        8000: (110, 0),
+        8000: (103, 0),
         11_025: (70, 0),
-        16_000: (50, 0),
-        22_050: (28, 0),
-        # technically this sort of works but it sounds bad and takes up lots of space for no benefit
-        # 44_100: (5, 0),
+        16_000: (41, 0),
+        22_050: (24, 0),
+        # technically 44100 kind of works but it sounds bad and takes up lots of space for no benefit
+        # 44_100: (10, 0),
     }
 
     def __init__(self, badge, bufsize=4096, pwm_freq=300_000):
@@ -92,6 +91,16 @@ class ShittyDAC:
             bc.SCREEN_HEIGHT - 40,
             self.badge.theme.fg1,
         )
+        ## display playback delay for tuning
+        # self.badge.screen.frame_buf.rect(
+        #     100, bc.SCREEN_HEIGHT - 80, 24, 10, self.badge.theme.bg2, True
+        # )
+        # self.badge.screen.frame_buf.text(
+        #     f"{self.playback_wait_us}",
+        #     100,
+        #     bc.SCREEN_HEIGHT - 80,
+        #     self.badge.theme.fg1,
+        # )
         self.badge.screen.draw_frame()
 
     def play_buf_8u(self):
